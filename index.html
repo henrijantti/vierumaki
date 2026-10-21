@@ -325,7 +325,7 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
 .legend i { width: 9px; height: 9px; display: inline-block; }
 .fine { margin: 10px 0 0; font-size: 12.5px; line-height: 17px; }
 .fine.m { margin-top: 4px; color: var(--muted); }
-.res-actions { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.res-actions { margin-top: 0; padding-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .res-actions .full { grid-column: 1 / -1; }
 #copybox { margin-top: 8px; width: 100%; box-sizing: border-box; min-height: 74px; font: 12px/1.4 var(--f-body); color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink); padding: 6px 8px; resize: none; }
 .toast {
@@ -696,8 +696,8 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
       <div class="slab"><span>SIMULAATTORIN MUKAAN</span></div>
       <div class="dist" id="r-dist" role="img"></div>
       <div class="legend" id="r-legend"></div>
-      <p class="fine" id="r-fine1"></p>
-      <p class="fine m" id="r-fine2"></p>
+      <p class="fine" id="r-fine1" hidden></p>
+      <p class="fine m" id="r-fine2" style="margin-top: 10px"></p>
 
       <div class="res-actions" id="res-single">
         <button class="btn sm full" type="button" id="save-card">TALLENNA TULOSKORTTI</button>
@@ -2117,7 +2117,7 @@ function renderResult() {
   if (ctxFight.mode === 'gp' && draw) $('#r-method').textContent += `\nJATKOON OSUMILLA: ${ab[ctxFight.gpWinner].nick}`;
   $('#r-summary').textContent = fightSummary(F, M);
   $('#r-jk').textContent = jkSummary(F);
-  $('#r-jk').hidden = !$('#r-jk').textContent;
+  $('#r-jk').hidden = true;   /* Henri 21.10.: jokeriteksti pois tulosnäytöltä */
 
   const sc = $('#r-score');
   if (r.method === 'NOSHOW') sc.hidden = true;
