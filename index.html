@@ -159,9 +159,10 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
 .stamp .s1 { font-weight: 600; font-size: 8px; line-height: 10px; letter-spacing: 1.5px; text-indent: 1.5px; }
 .stamp .s2 { font-family: var(--f-slab); font-size: 21px; line-height: 23px; font-variant-numeric: tabular-nums; }
 .stamp .s3 { font-weight: 600; font-size: 7px; line-height: 9px; letter-spacing: 1px; text-indent: 1px; }
-/* Kerroinleimat kuvan alakulmissa, ettei peitä kasvoja (Henri 21.10.). */
-.stamp.l { left: 5px; bottom: 5px; transform: rotate(-10deg); }
-.stamp.r { right: 5px; bottom: 5px; transform: rotate(10deg); }
+/* Kerroinleimat kuvan yläulkokulmissa, enimmäkseen kuvan ulkopuolella, ettei peitä kasvoja (Henri 21.10.). */
+.vs-grid .portrait { overflow: visible; }
+.stamp.l { left: -12px; top: -18px; transform: rotate(-10deg); }
+.stamp.r { right: -12px; top: -18px; transform: rotate(10deg); }
 .red { color: var(--red); }
 .ink { color: var(--ink); }
 .btn {
