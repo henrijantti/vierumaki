@@ -159,8 +159,9 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
 .stamp .s1 { font-weight: 600; font-size: 8px; line-height: 10px; letter-spacing: 1.5px; text-indent: 1.5px; }
 .stamp .s2 { font-family: var(--f-slab); font-size: 21px; line-height: 23px; font-variant-numeric: tabular-nums; }
 .stamp .s3 { font-weight: 600; font-size: 7px; line-height: 9px; letter-spacing: 1px; text-indent: 1px; }
-.stamp.l { left: -12px; top: -10px; transform: rotate(-10deg); }
-.stamp.r { right: -12px; top: -10px; transform: rotate(10deg); }
+/* Kerroinleimat kuvan alakulmissa, ettei peitä kasvoja (Henri 21.10.). */
+.stamp.l { left: 5px; bottom: 5px; transform: rotate(-10deg); }
+.stamp.r { right: 5px; bottom: 5px; transform: rotate(10deg); }
 .red { color: var(--red); }
 .ink { color: var(--ink); }
 .btn {
@@ -489,6 +490,10 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
   #v-valinta .vs-grid { margin-top: 12px; }
   #v-valinta .vs-grid .portrait { aspect-ratio: 5 / 4; }
   #v-valinta .names { margin-top: 5px; }
+  #v-valinta .stamp { width: 62px; height: 62px; }
+  #v-valinta .stamp .s2 { font-size: 18px; line-height: 20px; }
+  #v-valinta .stamp .s1 { font-size: 7px; line-height: 9px; }
+  #v-valinta .stamp .s3 { font-size: 6px; line-height: 8px; }
   #v-valinta .nm1 { font-size: 9px; line-height: 11px; }
   #v-valinta .nm2 { font-size: 15px; line-height: 18px; }
   #v-valinta .nm3 { font-size: clamp(17px, 5.4vw, 21px); line-height: 22px; }
