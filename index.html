@@ -479,6 +479,32 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
 .jchip.used b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .jchip.used .ji { opacity: .5; }
 .jchip.none { visibility: hidden; }
+/* Puhelimet: alkunäyttö mahtuu kokonaan ruudulle ilman rullaamista (Henri 21.10.). */
+@media (max-width: 500px) {
+  .bill-inner { padding: 10px 14px 12px; }
+  .tabs { margin-top: 8px; }
+  .tabs button { height: 32px; }
+  #v-valinta > .slab:first-child { margin-top: 10px; }
+  #v-valinta .kicker { display: none; }
+  #v-valinta .vs-grid { margin-top: 12px; }
+  #v-valinta .vs-grid .portrait { aspect-ratio: 5 / 4; }
+  #v-valinta .names { margin-top: 5px; }
+  #v-valinta .nm1 { font-size: 9px; line-height: 11px; }
+  #v-valinta .nm2 { font-size: 15px; line-height: 18px; }
+  #v-valinta .nm3 { font-size: clamp(17px, 5.4vw, 21px); line-height: 22px; }
+  #v-valinta .names + .slab { display: none; }
+  #v-valinta .tape { margin-top: 10px; }
+  .trow { padding: 2px 0; }
+  .tv { font-size: 17px; line-height: 19px; }
+  .tl b { line-height: 12px; }
+  .tl small { line-height: 10px; }
+  .roster-head, .seg-head { margin-top: 10px; }
+  .chip .face { width: 50px; height: 50px; }
+  .chip { width: 50px; }
+  .seg button { height: 36px; }
+  #v-valinta .mkt { padding-top: 6px; }
+  #gong { height: 46px; margin-top: 6px; }
+}
 /* Kapeat puhelimet (≤ 380 px): ottelijarivi ja jokerisirut mahtuvat kehykseen. */
 @media (max-width: 380px) {
   .roster { gap: 4px; }
@@ -1187,6 +1213,18 @@ for (const f of FIGHTERS) if (f.poses) for (const k in f.poses) { const im = new
 /* ===== Ääni: nyrkkeilykellon kilahdus WebAudiolla ===== */
 let soundOn = lsGet('vw-sim-sound') !== 'off';
 let actx = null;
+/* iPhone: soita äänet mediana, jotta äänetön-kytkin ei mykistä niitä (iOS 17+). */
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+/* iPhone: äänikonteksti avataan ensimmäisestä kosketuksesta, koska Safari ei salli sitä myöhemmin. */
+function unlockAudio() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state !== 'running') actx.resume();
+    const src = actx.createBufferSource(); src.buffer = actx.createBuffer(1, 1, 22050); src.connect(actx.destination); src.start(0);
+  } catch (e) {}
+  if (actx && actx.state === 'running') ['touchend', 'pointerdown', 'click', 'keydown'].forEach((t) => document.removeEventListener(t, unlockAudio, true));
+}
+['touchend', 'pointerdown', 'click', 'keydown'].forEach((t) => document.addEventListener(t, unlockAudio, true));
 function bell(times) {
   if (!soundOn) return;
   try {
