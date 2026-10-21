@@ -1,0 +1,2633 @@
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Vierumäki Simulaattori</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&amp;family=Anton&amp;family=Oswald:wght@400;500;600;700&amp;display=swap">
+<style>
+/* Layout: one phone-width fight bill in a double ink frame; views (valinta, ottelu, tulos, turnaus, ranking) swap in place. Single paper look by choice. */
+:root {
+  --paper: #ecdfc0;
+  --paper-2: #e0cfa8;
+  --ink: #1b1714;
+  --red: #b8232b;
+  --mustard: #c2932a;
+  --muted: #5d534a;
+  --draw: #8a7c6a;
+  --rule: rgba(27, 23, 20, .2);
+  --rule-strong: rgba(27, 23, 20, .45);
+  --on-ink: #ecdfc0;
+  --on-ink-dim: rgba(236, 223, 192, .7);
+  --f-display: Anton, Impact, 'Arial Narrow', sans-serif;
+  --f-body: Oswald, 'Arial Narrow', 'Helvetica Neue', sans-serif;
+  --f-slab: 'Alfa Slab One', Rockwell, 'Roboto Slab', Georgia, serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(ellipse at 50% 30%, var(--paper) 45%, var(--paper-2) 100%) fixed, var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; }
+button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+
+.bill {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  border: 4px solid var(--ink);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.bill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url(img/grain.png) repeat;
+  background-size: 256px 256px;
+  mix-blend-mode: multiply;
+  opacity: .28;
+  z-index: 20;
+}
+.bill-inner {
+  flex: 1;
+  border: 1.5px solid var(--ink);
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Header */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 7px;
+  border-bottom: 2px solid var(--ink);
+  font-weight: 600;
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 2.5px;
+  white-space: nowrap;
+}
+.topbar > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.topbar .ctx { display: inline-flex; align-items: center; gap: 6px; color: var(--red); }
+.livedot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); animation: pulse 1.2s steps(2, jump-none) infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+.sound {
+  margin: -10px -8px -10px 0;
+  width: 36px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer; color: var(--ink);
+}
+.sound svg { width: 18px; height: 18px; }
+
+/* Shared pieces */
+.view { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.slab {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 14px;
+}
+.slab::before, .slab::after { content: ""; flex: 1; height: 2px; background: var(--ink); }
+.slab span {
+  background: var(--red); color: var(--on-ink);
+  font-family: var(--f-slab); font-size: 14px; line-height: 19px; letter-spacing: 2px;
+  padding: 4px 12px 3px 14px; white-space: nowrap;
+}
+.kicker {
+  margin-top: 6px; text-align: center;
+  font-weight: 600; font-size: 10px; line-height: 14px; letter-spacing: 3px; text-indent: 3px;
+  color: var(--muted);
+}
+.portrait {
+  position: relative;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  overflow: hidden;
+  background: var(--ink);
+}
+.portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.portrait::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 42%, rgba(27,23,20,0) 58%, rgba(27,23,20,.45) 100%);
+}
+.placeholder {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper-2);
+  border: 1.5px dashed var(--rule-strong);
+  font-weight: 600; font-size: 10px; letter-spacing: 2px; color: var(--muted);
+}
+.stamp {
+  position: absolute;
+  width: 74px; height: 74px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid currentColor;
+  box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px currentColor;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+  z-index: 3;
+}
+.stamp .s1 { font-weight: 600; font-size: 8px; line-height: 10px; letter-spacing: 1.5px; text-indent: 1.5px; }
+.stamp .s2 { font-family: var(--f-slab); font-size: 21px; line-height: 23px; font-variant-numeric: tabular-nums; }
+.stamp .s3 { font-weight: 600; font-size: 7px; line-height: 9px; letter-spacing: 1px; text-indent: 1px; }
+.stamp.l { left: -12px; top: -10px; transform: rotate(-10deg); }
+.stamp.r { right: -12px; top: -10px; transform: rotate(10deg); }
+.red { color: var(--red); }
+.ink { color: var(--ink); }
+.btn {
+  height: 52px; width: 100%;
+  background: var(--ink); color: var(--on-ink);
+  border: 2px solid var(--ink);
+  font-family: var(--f-display); font-size: 22px; letter-spacing: 4px; text-indent: 4px;
+  cursor: pointer;
+}
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.sm { height: 46px; font-size: 16px; letter-spacing: 2px; text-indent: 2px; white-space: nowrap; overflow: hidden; }
+.btn:not(:disabled):active { transform: translateY(1px); }
+
+/* Valinta */
+.vs-grid { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); }
+.vs-grid .portrait { aspect-ratio: 6 / 7; max-width: 100%; }
+.vs-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.vs-mid::before, .vs-mid::after { content: ""; flex: 1; width: 2px; background: var(--ink); }
+.vs-mid span { font-family: var(--f-slab); font-size: 30px; line-height: 32px; color: var(--red); }
+.names { margin-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); text-align: center; }
+.nm1 { font-weight: 600; font-size: 10px; line-height: 13px; letter-spacing: 4px; text-indent: 4px; }
+.nm2 { font-family: var(--f-slab); font-size: 16px; line-height: 20px; color: var(--red); }
+.nm3 { font-family: var(--f-display); font-size: clamp(18px, 6vw, 23px); line-height: 26px; white-space: nowrap; }
+
+.tape { margin-top: 8px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+.trow {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) 112px minmax(0, 1fr) 30px;
+  column-gap: 6px; align-items: center;
+  padding: 6px 0 5px; border-bottom: 1px solid var(--rule);
+}
+.trow:last-child { border-bottom: 0; }
+.tv { font-family: var(--f-display); font-size: 18px; line-height: 20px; font-variant-numeric: tabular-nums; }
+.tv.rt { text-align: right; }
+.tl { text-align: center; }
+.tl b { display: block; font-weight: 600; font-size: 11px; line-height: 14px; letter-spacing: 3px; text-indent: 3px; }
+.tl small { display: block; font-size: 9px; line-height: 12px; letter-spacing: 0; color: var(--muted); white-space: nowrap; }
+.bar { height: 8px; background: var(--ink); max-width: 100%; transition: width .4s ease; }
+.bar.lead { background: var(--red); }
+.barwrap { display: flex; }
+.barwrap.l { justify-content: flex-end; }
+.note { margin-top: 6px; font-size: 10.5px; line-height: 14px; color: var(--muted); }
+
+.roster-head { margin-top: 14px; display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 3px; }
+.roster-head span:last-child { color: var(--muted); }
+.roster { margin-top: 7px; display: flex; justify-content: space-between; gap: 6px; }
+.chip {
+  position: relative; width: 56px; padding: 0; border: none; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.chip .face { display: block; width: 56px; height: 56px; box-sizing: border-box; border: 1.5px solid var(--ink); overflow: hidden; background: var(--ink); }
+.chip .face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; transform: scale(1.55); transform-origin: 50% 8%; display: block; }
+.chip .lbl { font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 1.5px; }
+.chip[aria-pressed="true"] .face { border: 3px solid var(--red); }
+.chip[aria-pressed="true"] .lbl { color: var(--red); }
+.chip .corner { position: absolute; left: -5px; top: -5px; width: 18px; height: 18px; background: var(--red); color: var(--on-ink); font-family: var(--f-slab); font-size: 11px; line-height: 18px; text-align: center; }
+.chip.soon { cursor: default; }
+.chip.soon .face { border: 1.5px dashed var(--rule-strong); background: transparent; display: flex; align-items: center; justify-content: center; }
+.chip.soon .lbl { color: var(--muted); }
+.mkt { margin-top: auto; padding-top: 14px; text-align: center; font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 1px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#gong { margin-top: 8px; }
+
+/* Ottelu */
+.strip { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr); column-gap: 8px; }
+.strip .portrait { height: 108px; }
+.strip .portrait img { object-position: 50% 0%; transform: scale(1.25); transform-origin: 50% 0%; }
+.fname { margin-top: 6px; font-family: var(--f-slab); font-size: 14px; line-height: 18px; color: var(--red); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter-row { margin-top: 6px; display: flex; justify-content: space-between; font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+.meter { margin-top: 3px; height: 7px; background: rgba(27, 23, 20, .15); }
+.meter i { display: block; height: 7px; background: var(--ink); transition: width .3s ease; }
+.meter i.low { background: var(--red); }
+.hits { margin-top: 5px; display: flex; justify-content: space-between; font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 1.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.clock { display: flex; flex-direction: column; align-items: center; padding-top: 6px; text-align: center; }
+.clock .k { font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 3px; text-indent: 3px; color: var(--muted); }
+.clock .rnd { font-family: var(--f-display); font-size: 32px; line-height: 34px; }
+.clock .time { margin-top: 2px; font-family: var(--f-slab); font-size: 24px; line-height: 28px; color: var(--red); font-variant-numeric: tabular-nums; }
+.clock .of { font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 1.5px; color: var(--muted); }
+.clock .div { margin: 10px 0 8px; width: 32px; height: 2px; background: var(--ink); }
+.clock .pts { font-family: var(--f-display); font-size: 20px; line-height: 23px; font-variant-numeric: tabular-nums; }
+.clock .now { margin-top: 5px; display: flex; flex-direction: column; align-items: center; }
+.clock .now b { font-weight: 600; font-size: 8.5px; line-height: 11px; letter-spacing: 2px; text-indent: 2px; color: var(--muted); white-space: nowrap; }
+.clock .now i { font-style: normal; font-family: var(--f-slab); font-size: 15px; line-height: 19px; font-variant-numeric: tabular-nums; }
+.clock .now i .lead { color: var(--red); }
+.clock .flip { display: inline-block; animation: ptsflip .7s ease-out; }
+@keyframes ptsflip { 0% { color: var(--red); transform: scale(1.18); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .clock .flip { animation: none; } }
+
+.mark {
+  position: absolute; left: 50%; top: 50%; z-index: 4;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  background: var(--red); color: var(--on-ink);
+  font-family: var(--f-slab); font-size: 15px; letter-spacing: 2px;
+  padding: 4px 9px 3px; white-space: nowrap;
+  box-shadow: 0 0 0 2px var(--paper);
+}
+.portrait.down img { filter: grayscale(1) brightness(.7); transform: scale(1.25) rotate(-6deg); }
+.ppop { position: absolute; right: 6px; top: 6px; z-index: 5; pointer-events: none;
+  font-family: var(--f-slab); font-size: 18px; line-height: 20px; color: var(--on-ink); background: var(--red);
+  padding: 2px 7px 1px; box-shadow: 0 0 0 2px var(--paper); animation: ppop .9s ease-out forwards; }
+.ppop.kd { font-size: 22px; line-height: 24px; }
+@keyframes ppop { 0% { opacity: 0; transform: translateY(6px) scale(.8); } 15% { opacity: 1; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@media (prefers-reduced-motion: reduce) { .ppop { animation: none; opacity: 1; } }
+.portrait.out img { filter: grayscale(1) brightness(.45); }
+.shake { animation: shake .26s linear; }
+.flash { animation: shake .3s linear, flash .3s linear; }
+@keyframes shake { 0%, 100% { translate: 0 0; } 25% { translate: -5px 1px; } 50% { translate: 4px -1px; } 75% { translate: -2px 0; } }
+@keyframes flash { 0% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
+.live .portrait img { animation: flicker 2.6s steps(1) infinite; }
+@keyframes flicker { 0% { opacity: 1; } 31% { opacity: .93; } 33% { opacity: 1; } 71% { opacity: .96; } 73% { opacity: 1; } }
+
+.band { margin-top: 14px; background: var(--ink); color: var(--on-ink); padding: 9px 12px 8px; }
+.band-top { display: flex; align-items: flex-end; gap: 14px; }
+.band-title { margin-right: auto; font-family: var(--f-slab); font-size: 12px; line-height: 16px; letter-spacing: 1.5px; color: var(--mustard); }
+.odd { text-align: right; }
+.odd small { display: block; font-weight: 600; font-size: 8.5px; line-height: 11px; letter-spacing: 2px; color: var(--on-ink-dim); }
+.odd b { display: block; font-family: var(--f-slab); font-weight: 400; font-size: 17px; line-height: 20px; font-variant-numeric: tabular-nums; }
+.odd.hi b { color: var(--mustard); }
+.band-sub { margin-top: 8px; font-weight: 600; font-size: 8.5px; line-height: 11px; letter-spacing: 1.5px; color: var(--on-ink-dim); }
+#chart { display: block; margin-top: 4px; width: 100%; height: 64px; }
+.rounds3 { margin-top: 3px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); text-align: center; font-weight: 600; font-size: 8.5px; line-height: 11px; letter-spacing: 2px; color: rgba(236, 223, 192, .6); }
+
+.feed { position: relative; flex: 1 1 220px; min-height: 220px; margin-top: 4px; overflow-y: auto; overscroll-behavior: contain; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent); }
+.grp-h { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0 3px; border-bottom: 1.5px solid var(--ink); font-weight: 600; font-size: 9.5px; line-height: 12px; letter-spacing: 2.5px; }
+.grp-h .r { color: var(--red); }
+.grp-h .r.done { color: var(--ink); }
+.item { display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(27, 23, 20, .18); }
+.item:last-child { border-bottom: 0; }
+.item .t { font-family: var(--f-slab); font-size: 12px; line-height: 17px; color: var(--red); font-variant-numeric: tabular-nums; }
+.item .x { font-size: 13px; line-height: 17px; min-width: 0; }
+.tag { background: var(--red); color: var(--on-ink); font-family: var(--f-slab); font-size: 9px; letter-spacing: 1px; padding: 1px 5px; margin-right: 6px; }
+.item.new { animation: slidein .35s ease-out; }
+@keyframes slidein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.controls { margin-top: 10px; display: flex; gap: 8px; }
+.controls .btn { flex: 1; }
+.controls .btn[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.controls .btn[aria-pressed="false"] { background: transparent; color: var(--ink); }
+.controls .wide { flex: 1.6; }
+
+/* Tulos */
+.winner { position: relative; margin-top: 16px; height: 190px; display: flex; gap: 6px; }
+.winner .portrait { flex: 1; height: 100%; }
+.winner .stamp { right: -12px; top: -12px; width: 84px; height: 84px; transform: rotate(10deg); color: var(--red); }
+.winner .stamp .s2 { font-size: 22px; line-height: 26px; }
+.winner.draw .stamp { right: auto; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg); }
+.wname { margin-top: 10px; text-align: center; }
+.wname .n2 { font-family: var(--f-slab); font-size: 28px; line-height: 32px; color: var(--red); }
+.wname .n3 { font-family: var(--f-display); font-size: 28px; line-height: 32px; text-wrap: balance; }
+.method { margin-top: 4px; text-align: center; font-weight: 600; font-size: 10px; line-height: 15px; letter-spacing: 2px; text-indent: 2px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: pre-line; }
+.summary { margin: 10px 0 0; font-size: 14px; line-height: 19px; text-align: center; text-wrap: balance; }
+.score { margin-top: 12px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+.srow { display: grid; grid-template-columns: minmax(0, 1fr) 34px 34px 34px 62px; column-gap: 4px; align-items: center; padding: 5px 0 4px; border-bottom: 1px solid var(--rule); text-align: center; }
+.srow:last-child { border-bottom: 0; }
+.srow.h { font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 2px; color: var(--muted); }
+.srow .who { text-align: left; font-family: var(--f-display); font-size: 17px; line-height: 20px; }
+.srow .c { font-family: var(--f-display); font-size: 17px; line-height: 20px; font-variant-numeric: tabular-nums; }
+.srow .c.m { font-family: var(--f-slab); font-size: 12px; color: var(--red); }
+.srow .o { font-weight: 600; font-size: 12px; line-height: 20px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dist { margin-top: 10px; display: flex; gap: 2px; height: 16px; }
+.dist i { display: block; min-width: 0; }
+.legend { margin-top: 6px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; font-weight: 600; font-size: 10px; line-height: 14px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 9px; height: 9px; display: inline-block; }
+.fine { margin: 10px 0 0; font-size: 12.5px; line-height: 17px; }
+.fine.m { margin-top: 4px; color: var(--muted); }
+.res-actions { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.res-actions .full { grid-column: 1 / -1; }
+#copybox { margin-top: 8px; width: 100%; box-sizing: border-box; min-height: 74px; font: 12px/1.4 var(--f-body); color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink); padding: 6px 8px; resize: none; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 50;
+  transform: translateX(-50%);
+  background: var(--ink); color: var(--on-ink);
+  font-weight: 600; font-size: 12px; letter-spacing: 1px;
+  padding: 10px 14px; max-width: calc(100% - 48px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shake, .flash, .live .portrait img, .item.new, .livedot { animation: none !important; }
+  .bar, .meter i { transition: none; }
+}
+
+/* ===== Lisäykset: välilehdet, kulmamies, turnaus, ranking, tuloskortti ===== */
+.tabs { margin-top: 10px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tabs button {
+  height: 36px; border: 1.5px solid var(--ink); background: transparent; cursor: pointer;
+  font-family: var(--f-slab); font-size: 12px; letter-spacing: 1.5px; text-indent: 1.5px; color: var(--ink);
+}
+.tabs button[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: var(--on-ink); }
+
+.seg-head { margin-top: 14px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 3px; }
+.seg-head span:last-child { color: var(--muted); letter-spacing: 1px; text-align: right; }
+.seg { margin-top: 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1.5px solid var(--ink); }
+.seg button {
+  height: 40px; border: 0; border-left: 1.5px solid var(--ink); background: transparent; cursor: pointer;
+  font-weight: 600; font-size: 11px; letter-spacing: 1.5px; color: var(--ink); white-space: nowrap;
+}
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+
+/* Kulmamies */
+.feed-wrap { position: relative; flex: 1 1 220px; min-height: 220px; display: flex; flex-direction: column; }
+.feed-wrap .feed { flex: 1 1 auto; }
+.corner {
+  position: absolute; inset: 0; z-index: 6;
+  background: var(--paper);
+  border-top: 2px solid var(--ink);
+  padding: 10px 0 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.corner-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.corner-h b { font-family: var(--f-slab); font-weight: 400; font-size: 15px; letter-spacing: 1.5px; color: var(--red); }
+.corner-h span { font-weight: 600; font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+.cside { border-top: 1px solid var(--rule); padding-top: 8px; }
+.cside-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 600; font-size: 10px; letter-spacing: 1.5px; font-variant-numeric: tabular-nums; }
+.cside-h .who { font-family: var(--f-slab); font-weight: 400; font-size: 14px; letter-spacing: 1px; color: var(--red); }
+.copts { margin-top: 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.copt {
+  min-height: 64px; padding: 6px 6px 5px; box-sizing: border-box; cursor: pointer;
+  border: 1.5px solid var(--ink); background: transparent; text-align: left;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.copt b { font-family: var(--f-display); font-weight: 400; font-size: 15px; line-height: 17px; letter-spacing: 1px; }
+.copt small { font-size: 10px; line-height: 13px; color: var(--muted); }
+.copt[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.copt[aria-pressed="true"] small { color: var(--on-ink-dim); }
+.corner .btn { margin-top: 4px; flex: none; }
+.cside-sub { margin-top: 2px; font-size: 11px; line-height: 14px; color: var(--muted); }
+
+/* Turnaus */
+.gp-sub { margin-top: 6px; text-align: center; font-size: 12px; line-height: 16px; color: var(--muted); }
+.bracket { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.bround { margin-top: 8px; display: flex; justify-content: space-between; font-weight: 600; font-size: 9.5px; letter-spacing: 2.5px; padding-bottom: 3px; border-bottom: 1.5px solid var(--ink); }
+.bround span:last-child { color: var(--muted); letter-spacing: 1px; }
+.match { border-bottom: 1px solid var(--rule); padding: 6px 0 8px; }
+.mrow { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 3px 0; }
+.mface { width: 34px; height: 34px; box-sizing: border-box; border: 1.5px solid var(--ink); overflow: hidden; background: var(--ink); }
+.mface img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; transform: scale(1.55); transform-origin: 50% 8%; display: block; }
+.mface.empty { background: transparent; border-style: dashed; border-color: var(--rule-strong); }
+.mname { font-family: var(--f-display); font-size: 18px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mname.win { color: var(--red); }
+.mname.lose { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.modd { font-family: var(--f-slab); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mres { margin-top: 3px; font-weight: 600; font-size: 10px; letter-spacing: 1.5px; color: var(--muted); }
+.mbtns { margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mbtns .btn { height: 40px; font-size: 14px; }
+.champ { margin-top: 12px; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: center; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); padding: 10px 0; }
+.champ .portrait { height: 112px; }
+.champ .portrait img { object-position: 50% 0%; transform: scale(1.2); transform-origin: 50% 0%; }
+.champ .k { font-weight: 600; font-size: 9px; letter-spacing: 3px; color: var(--red); }
+.champ .n2 { font-family: var(--f-slab); font-size: 22px; line-height: 26px; color: var(--red); }
+.champ .n3 { font-family: var(--f-display); font-size: 22px; line-height: 25px; }
+.champ .p { margin-top: 4px; font-size: 11.5px; line-height: 15px; color: var(--muted); }
+.gp-actions { margin-top: auto; padding-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gp-actions .full { grid-column: 1 / -1; }
+
+/* Ranking */
+.src-note { margin-top: 6px; font-size: 11.5px; line-height: 15px; color: var(--muted); text-align: center; }
+.rtable { margin-top: 8px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+.rrow { display: grid; grid-template-columns: 18px 30px minmax(0, 1fr) 40px 50px 48px; gap: 5px; align-items: center; padding: 6px 0 5px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+.rrow:last-child { border-bottom: 0; }
+.rrow.h { font-weight: 600; font-size: 8.5px; letter-spacing: 1.5px; color: var(--muted); padding: 5px 0 4px; }
+.rrow .pos { font-family: var(--f-slab); font-size: 14px; color: var(--red); }
+.rrow .mface { width: 30px; height: 30px; }
+.rrow .nm { font-family: var(--f-display); font-size: 17px; line-height: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rrow .nm small { display: block; font-family: var(--f-body); font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: .5px; color: var(--muted); }
+.rrow .elo { font-family: var(--f-slab); font-size: 15px; text-align: right; }
+.rrow .rec { font-weight: 600; font-size: 11px; text-align: right; }
+.form { display: flex; gap: 2px; justify-content: flex-end; }
+.form i { width: 8px; height: 8px; display: block; box-sizing: border-box; }
+.form i.w { background: var(--red); }
+.form i.l { border: 1.5px solid var(--ink); }
+.form i.d { background: var(--draw); }
+.hist { margin-top: 6px; }
+.hrow { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(27, 23, 20, .18); }
+.hrow:last-child { border-bottom: 0; }
+.hrow .d { font-family: var(--f-slab); font-size: 11px; line-height: 16px; color: var(--red); font-variant-numeric: tabular-nums; }
+.hrow .x { font-size: 13px; line-height: 17px; min-width: 0; }
+.hrow .x small { display: block; font-size: 10.5px; line-height: 14px; color: var(--muted); }
+.empty-note { padding: 14px 0; font-size: 13px; line-height: 18px; color: var(--muted); text-align: center; }
+
+/* Tuloskortin esikatselu */
+.modal {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(27, 23, 20, .82);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.modal img { max-width: min(100%, 420px); max-height: 72vh; height: auto; box-shadow: 0 0 0 2px var(--paper); }
+.modal p { margin: 0; max-width: 420px; color: var(--on-ink); font-size: 13px; line-height: 18px; text-align: center; }
+.modal .btn { max-width: 420px; background: var(--paper); color: var(--ink); border-color: var(--paper); }
+
+/* Asennot */
+.portrait img.pose { object-position: 50% 30% !important; transform: none !important; }
+.portrait.down img.pose { transform: rotate(-4deg) !important; }
+#ri0.pose { object-position: 50% 10% !important; }
+.champ .portrait img.pose { object-position: 50% 15% !important; }
+
+/* Jokeri (v11) */
+.strip { position: relative; }
+.ji { flex: none; box-sizing: border-box; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--paper); color: var(--ink); display: flex; align-items: center; justify-content: center; }
+.jchip { margin-top: 7px; width: 100%; min-height: 34px; display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 6px; align-items: center; padding: 3px 6px 5px 4px; box-sizing: border-box; border: 1.5px solid var(--mustard); background: transparent; text-align: left; position: relative; overflow: hidden; cursor: default; }
+.jchip .ji { width: 20px; height: 26px; }
+.jchip .ji svg { width: 14px; height: 14px; }
+.jchip .jt { min-width: 0; }
+.jchip .jt small { display: block; font-weight: 600; font-size: 8px; line-height: 10px; letter-spacing: 1px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.jchip .jt b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 12.5px; line-height: 15px; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jchip .jbar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--mustard); transition: width .35s linear; }
+.jchip.can { cursor: pointer; background: rgba(194, 147, 42, .18); }
+.jchip.can .jt small { color: var(--red); }
+.jchip.req { cursor: pointer; background: var(--mustard); }
+.jchip.req .jt small { color: var(--ink); }
+.jchip.on { background: var(--ink); color: var(--on-ink); }
+.jchip.on .ji { background: var(--mustard); border-color: var(--mustard); }
+.jchip.on .jt small { color: var(--mustard); }
+.jchip.used { border-style: dashed; border-color: var(--rule-strong); color: var(--muted); }
+.jchip.used b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.jchip.used .ji { opacity: .5; }
+.jchip.none { visibility: hidden; }
+.portrait.jon { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--mustard); animation: jglow 1.4s ease-in-out infinite; }
+@keyframes jglow { 50% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--mustard), 0 0 16px 5px rgba(194, 147, 42, .6); } }
+.tag.jtag { background: var(--mustard); color: var(--ink); }
+.jreveal { position: absolute; inset: -6px -4px; z-index: 8; display: flex; align-items: center; justify-content: center; pointer-events: none; animation: jdim var(--jd, 1.9s) ease forwards; }
+.jcard { position: relative; width: 156px; box-sizing: border-box; padding: 8px 12px 11px; text-align: center; background: var(--paper); border: 2px solid var(--ink); box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px var(--mustard), 0 10px 26px rgba(0, 0, 0, .45); animation: jin var(--jd, 1.9s) cubic-bezier(.2, .8, .2, 1) forwards; }
+.jcard .jc-c { position: absolute; font-family: var(--f-slab); font-size: 13px; line-height: 14px; color: var(--red); }
+.jcard .jc-c.tl { left: 9px; top: 8px; }
+.jcard .jc-c.br { right: 9px; bottom: 8px; transform: rotate(180deg); }
+.jcard .jc-k { font-weight: 600; font-size: 9px; line-height: 12px; letter-spacing: 3px; text-indent: 3px; color: var(--muted); }
+.jcard .jc-ic { margin: 7px auto 5px; width: 48px; height: 48px; border-radius: 50%; background: var(--ink); color: var(--mustard); display: flex; align-items: center; justify-content: center; }
+.jcard .jc-ic svg { width: 28px; height: 28px; }
+.jcard .jc-nick { font-family: var(--f-slab); font-size: 12px; line-height: 15px; color: var(--red); }
+.jcard .jc-name { font-family: var(--f-display); font-size: 23px; line-height: 26px; letter-spacing: .5px; }
+.jcard .jc-desc { margin-top: 4px; font-size: 10.5px; line-height: 13px; color: var(--muted); }
+@keyframes jin {
+  0% { opacity: 0; transform: perspective(600px) rotateY(95deg) scale(.6); }
+  22% { opacity: 1; transform: perspective(600px) rotateY(0deg) scale(1.05); }
+  30%, 78% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translate(var(--jx, 0px), 80px) scale(.22); }
+}
+@keyframes jdim { 0% { background: rgba(27, 23, 20, 0); } 15%, 72% { background: rgba(27, 23, 20, .62); } 100% { background: rgba(27, 23, 20, 0); } }
+.jpair { margin-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.jmini { border: 1.5px solid var(--mustard); padding: 6px 7px 7px; display: flex; gap: 7px; align-items: flex-start; min-width: 0; }
+.jmini .ji { width: 24px; height: 31px; }
+.jmini .ji svg { width: 16px; height: 16px; }
+.jmini small { display: block; font-weight: 600; font-size: 8px; line-height: 10px; letter-spacing: 2px; color: var(--muted); }
+.jmini b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 14px; line-height: 17px; letter-spacing: .3px; }
+.jmini span { display: block; margin-top: 2px; font-size: 10px; line-height: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) {
+  .portrait.jon { animation: none; }
+  .jcard { animation: jfade var(--jd, 1.9s) linear forwards; }
+  .jreveal { animation: none; background: rgba(27, 23, 20, .62); }
+  .jchip .jbar { transition: none; }
+}
+@keyframes jfade { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+
+.feed-wrap.cornering { min-height: 300px; }
+.feed-wrap.cornering.two { min-height: 420px; }
+</style>
+
+<div class="bill">
+  <div class="bill-inner">
+    <header class="topbar">
+      <span>VIERUMÄKI WEEKEND</span>
+      <span class="ctx"><span class="livedot" id="livedot" hidden></span><span id="ctx">SIMULAATTORI</span>
+        <button class="sound" id="sound" type="button" aria-pressed="true" aria-label="Ääni päällä">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4z"></path>
+            <path id="sound-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path>
+            <path id="sound-off" d="M17 9l5 6M22 9l-5 6" hidden></path>
+          </svg>
+        </button>
+      </span>
+    </header>
+
+    <nav class="tabs" id="tabs" aria-label="Pelitila">
+      <button type="button" data-tab="valinta" aria-pressed="true">OTTELU</button>
+      <button type="button" data-tab="turnaus" aria-pressed="false">TURNAUS</button>
+      <button type="button" data-tab="ranking" aria-pressed="false">RANKING</button>
+    </nav>
+
+    <!-- ===== Valinta ===== -->
+    <section class="view" id="v-valinta" aria-label="Otteluvalinta">
+      <div class="slab"><span>ILLAN PÄÄOTTELU</span></div>
+      <div class="kicker">3 ERÄÄ × 2 MIN</div>
+
+      <div class="vs-grid">
+        <div class="portrait" id="sp0"><img id="si0" alt=""><div class="placeholder" id="sph0" hidden>VALITSE</div>
+          <div class="stamp l red" id="ss0"><span class="s1">KERROIN</span><span class="s2" id="so0">–</span><span class="s3">VOITTOON</span></div>
+        </div>
+        <div class="vs-mid"><span>VS</span></div>
+        <div class="portrait" id="sp1"><img id="si1" alt=""><div class="placeholder" id="sph1" hidden>VALITSE</div>
+          <div class="stamp r ink" id="ss1"><span class="s1">KERROIN</span><span class="s2" id="so1">–</span><span class="s3">VOITTOON</span></div>
+        </div>
+      </div>
+      <div class="names">
+        <div><div class="nm1" id="sn1-0"></div><div class="nm2" id="sn2-0"></div><div class="nm3" id="sn3-0"></div></div>
+        <div></div>
+        <div><div class="nm1" id="sn1-1"></div><div class="nm2" id="sn2-1"></div><div class="nm3" id="sn3-1"></div></div>
+      </div>
+
+      <div class="slab"><span>MIES MIESTÄ VASTAAN</span></div>
+      <div class="tape" id="tape"></div>
+      <div class="note" id="tape-note">Ominaisuudet lasketaan ottelijakorttien ennustetuista sijoista.</div>
+      <div class="note">PISTEET: osuma 1 · iso osuma 2 · täysosuma 3 · kaato 5. Jos ottelu menee täyteen aikaan, voittaa se, jolla on enemmän pisteitä.</div>
+      <div class="jpair" id="jpair"></div>
+
+      <div class="roster-head"><span>OTTELIJAT</span><span>VALITSE KAKSI</span></div>
+      <div class="roster" id="roster"></div>
+
+      <div class="seg-head"><span>KULMAMIES</span><span id="players-note"></span></div>
+      <div class="seg" id="players" role="group" aria-label="Kuka valitsee taktiikat">
+        <button type="button" data-p="0" aria-pressed="true">KONE</button>
+        <button type="button" data-p="1" aria-pressed="false">1 PELAAJA</button>
+        <button type="button" data-p="2" aria-pressed="false">2 PELAAJAA</button>
+      </div>
+
+      <div class="mkt" id="mkt" aria-live="polite">Hinnoitellaan…</div>
+      <button class="btn" id="gong" type="button" disabled>SOITA GONGIA</button>
+    </section>
+
+    <!-- ===== Ottelu ===== -->
+    <section class="view" id="v-ottelu" aria-label="Ottelu" hidden>
+      <div class="strip live" id="strip">
+        <div>
+          <div class="portrait" id="fp0"><img id="fi0" alt=""></div>
+          <div class="fname" id="fn0"></div>
+          <div class="meter-row"><span>KUNTO</span><span id="fe0">100 %</span></div>
+          <div class="meter"><i id="fm0" style="width: 100%"></i></div>
+          <div class="hits"><span>OSUMAT</span><span id="fh0">0 / 0</span></div>
+          <button type="button" class="jchip" id="jk0"></button>
+        </div>
+        <div class="clock">
+          <span class="k">ERÄ</span>
+          <span class="rnd" id="crnd">1 / 3</span>
+          <span class="time" id="ctime">0:00</span>
+          <span class="of">/ 2:00</span>
+          <span class="div"></span>
+          <span class="k">PISTEET</span>
+          <span class="pts" id="cpts">0–0</span>
+          <span class="now" id="cnow" hidden><b id="cnowk">TÄMÄ ERÄ</b><i id="cnowv">TASAN</i></span>
+        </div>
+        <div>
+          <div class="portrait" id="fp1"><img id="fi1" alt=""></div>
+          <div class="fname" id="fn1"></div>
+          <div class="meter-row"><span>KUNTO</span><span id="fe1">100 %</span></div>
+          <div class="meter"><i id="fm1" style="width: 100%"></i></div>
+          <div class="hits"><span>OSUMAT</span><span id="fh1">0 / 0</span></div>
+          <button type="button" class="jchip" id="jk1"></button>
+        </div>
+        <div class="jreveal" id="jreveal" hidden></div>
+      </div>
+
+      <div class="band">
+        <div class="band-top">
+          <span class="band-title">LIVE-KERROIN</span>
+          <div class="odd" id="lo0"><small id="lon0"></small><b id="lov0">–</b></div>
+          <div class="odd" id="lo1"><small id="lon1"></small><b id="lov1">–</b></div>
+        </div>
+        <div class="band-sub" id="chart-title"></div>
+        <svg id="chart" role="img" aria-label="Voittotodennäköisyys ottelun aikana"></svg>
+        <div class="rounds3"><span>1. ERÄ</span><span>2. ERÄ</span><span>3. ERÄ</span></div>
+      </div>
+
+      <div class="slab"><span>SELOSTUS</span></div>
+      <div class="feed-wrap">
+        <div class="feed" id="feed" aria-live="polite"></div>
+        <div class="corner" id="corner" hidden></div>
+      </div>
+
+      <div class="controls" id="controls">
+        <button class="btn sm" type="button" data-speed="1" aria-pressed="true">1×</button>
+        <button class="btn sm" type="button" data-speed="4" aria-pressed="false">4×</button>
+        <button class="btn sm wide" type="button" id="skip">LOPPUUN</button>
+      </div>
+      <div class="controls" id="controls-end" hidden>
+        <button class="btn" type="button" id="to-result">TULOS</button>
+      </div>
+    </section>
+
+    <!-- ===== Tulos ===== -->
+    <section class="view" id="v-tulos" aria-label="Tulos" hidden>
+      <div class="slab"><span id="r-slab">VOITTAJA</span></div>
+      <div class="winner" id="r-win">
+        <div class="portrait" id="rp0"><img id="ri0" alt=""></div>
+        <div class="portrait" id="rp1" hidden><img id="ri1" alt=""></div>
+        <div class="stamp"><span class="s1" id="rs1"></span><span class="s2" id="rs2"></span><span class="s3" id="rs3"></span></div>
+      </div>
+      <div class="wname"><div class="n2" id="rn2"></div><div class="n3" id="rn3"></div></div>
+      <div class="method" id="r-method"></div>
+      <p class="summary" id="r-summary"></p>
+      <div class="score" id="r-score"></div>
+      <p class="fine m" id="r-jk"></p>
+
+      <div class="slab"><span>SIMULAATTORIN MUKAAN</span></div>
+      <div class="dist" id="r-dist" role="img"></div>
+      <div class="legend" id="r-legend"></div>
+      <p class="fine" id="r-fine1"></p>
+      <p class="fine m" id="r-fine2"></p>
+
+      <div class="res-actions" id="res-single">
+        <button class="btn sm full" type="button" id="save-card">TALLENNA TULOSKORTTI</button>
+        <button class="btn sm ghost" type="button" id="rematch">UUSINTAOTTELU</button>
+        <button class="btn sm ghost" type="button" id="newfight">UUSI OTTELU</button>
+        <button class="btn sm ghost full" type="button" id="copy">KOPIOI TEKSTINÄ</button>
+      </div>
+      <div class="res-actions" id="res-gp" hidden>
+        <button class="btn sm full" type="button" id="gp-continue">JATKA TURNAUSTA</button>
+        <button class="btn sm ghost full" type="button" id="save-card-gp">TALLENNA TULOSKORTTI</button>
+      </div>
+      <textarea id="copybox" readonly hidden aria-label="Tulos kopioitavaksi"></textarea>
+    </section>
+
+    <!-- ===== Turnaus ===== -->
+    <section class="view" id="v-turnaus" aria-label="Turnaus" hidden>
+      <div class="slab"><span>VIERUMÄKI GRAND PRIX</span></div>
+      <div class="kicker" id="gp-kicker">PUDOTUSPELI</div>
+      <p class="gp-sub" id="gp-sub">Kaavio arvotaan. Kertoin kertoo, kuinka todennäköisesti ottelija voittaa koko turnauksen.</p>
+      <div class="bracket" id="bracket"></div>
+      <div id="champ"></div>
+      <div class="gp-actions" id="gp-actions"></div>
+    </section>
+
+    <!-- ===== Ranking ===== -->
+    <section class="view" id="v-ranking" aria-label="Ranking" hidden>
+      <div class="slab"><span>VIRALLINEN RANKING</span></div>
+      <p class="src-note" id="src-note">Ladataan tilastoa…</p>
+      <div class="rtable" id="rtable"></div>
+      <div class="slab"><span>KAUSISIMULAATIO</span></div>
+      <p class="src-note">Kone ottelee kokonaisen kauden tasaisella otteluohjelmalla ja koneen taktiikoilla. Tulos ei mene viralliseen rankingiin.</p>
+      <div class="mbtns" style="margin-top:8px"><button class="btn sm" type="button" data-season="50">SIMULOI 50</button><button class="btn sm" type="button" data-season="100">SIMULOI 100</button></div>
+      <div id="season"></div>
+      <div class="slab"><span>VIIMEISIMMÄT OTTELUT</span></div>
+      <div class="hist" id="hist"></div>
+      <div class="slab"><span>GRAND PRIX -MESTARIT</span></div>
+      <div class="hist" id="gphist"></div>
+    </section>
+  </div>
+</div>
+
+<div class="modal" id="card-modal" hidden role="dialog" aria-modal="true" aria-label="Tuloskortti">
+  <img id="card-img" alt="Tuloskortti">
+  <p id="card-hint">Tallenna kuva painamalla sitä pitkään ja lähetä se ryhmään.</p>
+  <button class="btn sm" type="button" id="card-close">SULJE</button>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ===== Ottelumoottori =====
+   Sijat (1–6) → ominaisuudet 48–73. Sama malli kuin mock-upin Python-simulaatiossa.
+   ISKU = Voima, KESTO = Juoksu + Uinti + Hiihto, JALKATYÖ = Padel, LEUKA = Heinolan yö. */
+/* Tiivistetty asteikko (v4): sijojen erot pieniä, jotta kaikki ovat lähellä toisiaan. */
+const RATING = { 1: 73, 2: 68, 3: 63, 4: 58, 5: 53, 6: 48 };
+/* Tasapainotettu: päivän vire, satunnainen täysosuma ja maltillisempi kuluminen, jotta myös altavastaajalla on mahdollisuus. */
+const K = { drain: 0.35, tko: 10, lucky: 0.05, luckyMult: 1.9, kd: 0.06, form: 0.25, formRho: 0.6, formTau: 120 };
+const ROUNDS = 3, EX = 30, EX_SEC = 4;
+/* Pisteet (v9): jokainen osuma tuo pisteitä, täyden ajan jälkeen voittaa se, jolla on enemmän pisteitä. */
+const PTS = { hit: 1, big: 2, lucky: 3, kd: 5, bigDmg: 9 };
+
+/* Kulmamiehen taktiikat erää kohden.
+   throw = lyöntitahti, cost = lyönnin kuluttama kunto, dmg = iskun voima,
+   def = muutos vastustajan osumatodennäköisyyteen (miinus = vaikeampi osua),
+   chin = kerroin tyrmäyskynnykseen, rec = lisäpalautuminen erätauolla. */
+const TACTICS = {
+  paine:  { throw: 0.14, cost: 1.25, dmg: 1.08, def: 0.05, chin: 0.95, rec: 0 },
+  saasto: { throw: -0.12, cost: 0.65, dmg: 0.95, def: 0, chin: 1, rec: 10 },
+  leuka:  { throw: -0.06, cost: 0.95, dmg: 1, def: -0.08, chin: 1.15, rec: 0 }
+};
+const TACTIC_KEYS = ['paine', 'saasto', 'leuka'];
+
+function stats(f) {
+  const s = f.sijat, h = f.tasoitus || 0;   /* tasoitus: pisteitä kaikkiin ominaisuuksiin */
+  return {
+    P: RATING[s.voima] + h,
+    S: Math.round((RATING[s.juoksu] + RATING[s.uinti] + RATING[s.hiihto]) / 3) + h,
+    F: RATING[s.padel] + h,
+    C: RATING[s.yo] + h
+  };
+}
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hashStr(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+function newFight(A, B) {
+  return {
+    ab: [A, B],
+    st: [{ E: 100, H: 100, kd: 0 }, { E: 100, H: 100, kd: 0 }],
+    cards: [[0, 0]],            // pistetili [a, b]
+    rounds: [],                 // { landed, thrown, hits, kd, pts }
+    r: 1, x: 0,
+    acc: freshAcc(),
+    result: null,
+    started: false,
+    z: [0, 0],
+    eta: [0, 0],
+    form: [1, 1],
+    tac: ['paine', 'paine'],
+    ctl: [false, false],     /* true = ihminen valitsee taktiikan */
+    jk: [0, 0], jkReq: [false, false], jkAt: [null, null]
+  };
+}
+function freshAcc() { return { landed: [0, 0], thrown: [0, 0], hits: [0, 0], kd: [0, 0], pts: [0, 0] }; }
+function cloneFight(f) {
+  return {
+    ab: f.ab,
+    st: f.st.map(s => ({ ...s })),
+    cards: f.cards.map(c => c.slice()),
+    rounds: f.rounds,
+    r: f.r, x: f.x,
+    acc: { landed: f.acc.landed.slice(), thrown: f.acc.thrown.slice(), hits: f.acc.hits.slice(), kd: f.acc.kd.slice(), pts: f.acc.pts.slice() },
+    result: f.result,
+    started: f.started,
+    z: f.z.slice(),
+    eta: f.eta ? f.eta.slice() : [0, 0],
+    form: f.form.slice(),
+    tac: f.tac.slice(),
+    ctl: [false, false],     /* simulaatioissa tulevat erät valitsee kone */
+    jk: f.jk ? f.jk.slice() : [0, 0], jkReq: f.jkReq ? f.jkReq.slice() : [false, false], jkAt: [null, null]
+  };
+}
+
+/* Koneen kulmamies: tilanne ratkaisee, satunnaisuus pitää vastustajan arvailemassa. */
+function cardLead(f, i) {
+  const c = f.cards[0];
+  return Math.sign(c[i] - c[1 - i]); /* -1 … 1 */
+}
+function aiTactic(f, i, rng) {
+  const s = f.st[i], me = stats(f.ab[i]), op = stats(f.ab[1 - i]);
+  const lead = cardLead(f, i), r = f.r;
+  const w = { paine: 1, saasto: 1, leuka: 1 };
+  if (s.E < 45) w.saasto += 2.2;
+  if (me.S >= 70) w.paine += 1;
+  if (me.S <= 40) w.saasto += 0.8;
+  if (op.P >= 84 && me.C <= 68) w.leuka += 1.2;
+  if (s.H < 50) w.leuka += 1;
+  if (r === ROUNDS && lead < 0) { w.paine += 3; w.saasto = 0.2; }
+  if (r === ROUNDS && lead > 0) { w.leuka += 1.5; w.paine *= 0.6; }
+  const tot = w.paine + w.saasto + w.leuka;
+  let u = rng() * tot;
+  for (const k of TACTIC_KEYS) { if ((u -= w[k]) <= 0) return k; }
+  return 'leuka';
+}
+function chooseTactics(f, rng) {
+  for (let i = 0; i < 2; i++) if (!f.ctl[i]) f.tac[i] = aiTactic(f, i, rng);
+}
+
+/* Ennen ensimmäistä gongia: saapuuko ottelija paikalle (vain jos datassa on noShow). */
+function gauss(rng) {
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  v = rng();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+/* Päivän vire: piilotettu z (normaalijakauma). Vire säilyy osittain erästä toiseen (formRho),
+   joten erätauolla voi löytyä toinen tuuli tai happi loppua. */
+function formOf(z) { return K.form > 0 ? clamp(1 + z * K.form, 1 - 2 * K.form, 1 + 2 * K.form) : 1; }
+function driftForm(f, rng, emit) {
+  if (!(K.form > 0)) return;
+  const before = f.form.slice(), r = K.formRho;
+  f.z = f.z.map((z) => r * z + Math.sqrt(1 - r * r) * gauss(rng));
+  f.form = f.z.map(formOf);
+  emit && emit({ type: 'formShift', before, form: f.form });
+}
+function preFight(f, rng, emit) {
+  f.started = true;
+  f.z = [gauss(rng), gauss(rng)];
+  f.eta = [gauss(rng), gauss(rng)];   /* markkinan havaintovirhe */
+  f.form = f.z.map(formOf);
+  emit && emit({ type: 'form', form: f.form });
+  for (let i = 0; i < 2; i++) {
+    const p = f.ab[i].noShow || 0;
+    if (p > 0 && rng() < p) {
+      f.result = { winner: 1 - i, method: 'NOSHOW', round: 0, time: 0 };
+      emit && emit({ type: 'noshow', who: i });
+      return;
+    }
+  }
+  chooseTactics(f, rng);
+}
+
+/* Jokeri (v11): jokaisella ottelijalla yksi erikoisliike ottelua kohden (ottelijan tiedoissa kenttä jokeri).
+   jk: 0 = käyttämättä, >0 = vaihtoja jäljellä, -1 = käytetty. Vaikutus päättyy viimeistään erän lopussa.
+   Kone pelaa jokerin tilanteen mukaan, pelaaja napauttamalla korttia (jkReq toteutuu seuraavassa vaihdossa). */
+const JK0 = { dmg: 1, throw: 0, cost: 1, hit: 0, dodge: 0, chin: 1, take: 1 };
+function jkMods(f, i) {
+  const J = f.ab[i].jokeri;
+  if (!J || !(f.jk[i] > 0)) return JK0;
+  return J._m || (J._m = Object.assign({}, JK0, J.mods));
+}
+function aiJoker(f, i, rng) {
+  const J = f.ab[i].jokeri;
+  const s = f.st[i], o = f.st[1 - i], lead = cardLead(f, i), left = EX - f.x;
+  if (f.r === ROUNDS) {
+    if (left <= J.dur) return true;
+    return rng() < (lead < 0 ? 0.3 : lead === 0 ? 0.15 : 0.05);
+  }
+  let p = f.r === 1 ? 0.004 : 0.012;
+  if (lead < 0) p += 0.02;
+  if (J.ai === 'E' && s.E < 40) p += 0.25;
+  if (J.ai === 'H' && s.H < 55) p += 0.25;
+  if (J.ai === 'opH' && o.H < 55) p += 0.15;
+  if (left < J.dur) p *= 0.3;
+  return rng() < p;
+}
+function playJoker(f, i, emit) {
+  const J = f.ab[i].jokeri, s = f.st[i];
+  f.jk[i] = J.dur; f.jkReq[i] = false;
+  f.jkAt[i] = { r: f.r, t: f.x * EX_SEC };
+  if (J.instant && J.instant.E) s.E = Math.min(100, s.E + J.instant.E);
+  if (J.instant && J.instant.H) s.H = Math.min(100, s.H + J.instant.H);
+  emit && emit({ type: 'joker', i, r: f.r, t: f.x * EX_SEC });
+}
+
+/* Yksi 4 sekunnin vaihto. Palauttaa true, kun ottelu päättyy. */
+function step(f, rng, emit) {
+  if (!f.started) { preFight(f, rng, emit); if (f.result) return true; }
+  if (f.result) return true;
+  for (let i = 0; i < 2; i++) {
+    if (f.jk[i] !== 0 || !f.ab[i].jokeri) continue;
+    if (f.jkReq[i] || (!f.ctl[i] && aiJoker(f, i, rng))) playJoker(f, i, emit);
+  }
+  const [A, B] = f.ab;
+  const sts = [A, B].map((x, i) => {
+    const b = stats(x), m = f.form[i];
+    return { P: b.P * m, S: b.S * (1 + (m - 1) / 2), F: b.F * m, C: b.C };
+  });
+  const acc = f.acc;
+  const t = (f.x + 1) * EX_SEC;
+  const order = rng() < 0.5 ? [[0, 1], [1, 0]] : [[1, 0], [0, 1]];
+  for (const [a, d] of order) {
+    const sa = f.st[a], sd = f.st[d], fa = sts[a], fd = sts[d];
+    const ta = TACTICS[f.tac[a]] || TACTICS.paine, td = TACTICS[f.tac[d]] || TACTICS.paine;
+    const ja = jkMods(f, a), jd = jkMods(f, d);
+    sa.E = Math.max(0, sa.E - 0.45 * (1.3 - fa.S / 100));
+    if (rng() > 0.22 + 0.38 * sa.E / 100 + ta.throw + ja.throw) continue;
+    acc.thrown[a]++;
+    sa.E = Math.max(0, sa.E - 2.3 * (1.3 - fa.S / 100) * ta.cost * ja.cost);
+    const ph = 0.36 + 0.22 * (fa.F - fd.F) / 100 + 0.18 * (1 - sd.E / 100) - 0.06 * (1 - sa.E / 100) + td.def + ja.hit - jd.dodge;
+    if (rng() > clamp(ph, 0.08, 0.85)) { emit && emit({ type: 'miss', a, d, t }); continue; }
+    let dmg = (4 + 10 * fa.P / 100) * (0.45 + 0.55 * sa.E / 100) * (0.6 + rng() * 0.85) * ta.dmg * ja.dmg;
+    const lucky = K.lucky > 0 && rng() < K.lucky;
+    if (lucky) dmg *= K.luckyMult;
+    acc.hits[a]++;
+    acc.landed[a] += dmg;
+    const pts = lucky ? PTS.lucky : dmg >= PTS.bigDmg ? PTS.big : PTS.hit;
+    acc.pts[a] += pts; f.cards[0][a] += pts;
+    sd.H = Math.max(1, sd.H - K.drain * dmg * jd.take);
+    emit && emit({ type: 'hit', a, d, dmg, t, lucky, pts });
+    const thr = (6 + 9 * fd.C / 100) * Math.sqrt(sd.H / 100) * td.chin * jd.chin;
+    const pkd = Math.max(0, dmg - thr) * K.kd;
+    if (rng() < pkd) {
+      sd.kd++; acc.kd[d]++;
+      acc.pts[a] += PTS.kd; f.cards[0][a] += PTS.kd;
+      const up = 0.55 + 0.42 * fd.C / 100 - 0.18 * (acc.kd[d] - 1) + 0.15 * (sd.H - 50) / 100;
+      const stays = rng() > clamp(up, 0.05, 0.97) || acc.kd[d] >= 3;
+      emit && emit({ type: 'kd', a, d, t, stays, count: stays ? 10 : Math.round(clamp(9 - fd.C / 20 + rng() * 3, 2, 9)) });
+      if (stays) {
+        endRound(f, false);
+        f.result = { winner: a, method: 'KO', round: f.r, time: t };
+        return true;
+      }
+      sd.E = Math.min(100, sd.E + 6);
+    }
+  }
+  for (let i = 0; i < 2; i++) {
+    if (f.jk[i] > 0 && (--f.jk[i] === 0 || f.x + 1 >= EX)) { f.jk[i] = -1; emit && emit({ type: 'jokerEnd', i, r: f.r, t }); }
+  }
+  if (f.st[0].H < K.tko || f.st[1].H < K.tko) {
+    const loser = f.st[0].H < K.tko ? 0 : 1;
+    endRound(f, false);
+    f.result = { winner: 1 - loser, method: 'TKO', round: f.r, time: t };
+    emit && emit({ type: 'tko', a: 1 - loser, d: loser, t });
+    return true;
+  }
+  f.x++;
+  if (f.x >= EX) {
+    endRound(f, true, rng);
+    emit && emit({ type: 'roundEnd', r: f.r, pts: f.rounds[f.rounds.length - 1].pts });
+    for (let i = 0; i < 2; i++) {
+      const s = f.st[i], fs = sts[i];
+      s.E = Math.min(100, s.E + 12 + 22 * fs.S / 100 + (TACTICS[f.tac[i]] || TACTICS.paine).rec);
+      s.H = Math.min(100, s.H + 6);
+    }
+    for (const [i, o] of [[0, 1], [1, 0]]) {
+      if (f.r < ROUNDS && f.st[i].E < 30 && f.st[i].H < 45 && rng() < 0.5) {
+        f.result = { winner: o, method: 'RTD', round: f.r, time: EX * EX_SEC };
+        emit && emit({ type: 'rtd', a: o, d: i, r: f.r });
+        return true;
+      }
+    }
+    if (f.r >= ROUNDS) { decide(f); emit && emit({ type: 'decision', result: f.result, pts: f.cards[0] }); return true; }
+    f.r++; f.x = 0; f.acc = freshAcc();
+    driftForm(f, rng, emit);
+    chooseTactics(f, rng);
+    emit && emit({ type: 'roundStart', r: f.r });
+  }
+  return false;
+}
+
+function endRound(f, scored, rng) {
+  const acc = f.acc;
+  f.rounds = f.rounds.concat([{ r: f.r, landed: acc.landed.slice(), thrown: acc.thrown.slice(), hits: acc.hits.slice(), kd: acc.kd.slice(), pts: acc.pts.slice(), full: !!scored }]);
+}
+
+function decide(f) {
+  const [a, b] = f.cards[0];
+  f.result = { winner: a > b ? 0 : b > a ? 1 : null, method: a === b ? 'DRAW' : 'PTS', round: ROUNDS, time: EX * EX_SEC };
+}
+
+function runToEnd(f, rng) { while (!step(f, rng, null)) { /* jatka */ } return f.result; }
+
+/* 10 000 ottelun jakauma ennen ottelua. Siemen parin mukaan, jotta kerroin pysyy samana. */
+function marketFor(A, B, N = 10000) {
+  const rng = mulberry32(hashStr(A.id + '|' + B.id));
+  const out = { w: [0, 0], draw: 0, cat: {} };
+  for (let i = 0; i < N; i++) {
+    const res = runToEnd(newFight(A, B), rng);
+    if (res.winner === null) out.draw++; else out.w[res.winner]++;
+    const k = outcomeKey(res);
+    out.cat[k] = (out.cat[k] || 0) + 1;
+  }
+  out.N = N;
+  out.p = [out.w[0] / N, out.w[1] / N, out.draw / N];
+  return out;
+}
+function outcomeKey(res) {
+  if (res.winner === null) return 'DRAW';
+  const cls = res.method === 'PTS' ? 'PTS' : res.method === 'NOSHOW' ? 'NOSHOW' : 'STOP';
+  return res.winner + ':' + cls;
+}
+
+/* Live-todennäköisyys: ajetaan ottelu loppuun nykyhetkestä N kertaa. */
+function liveOdds(f, N, rng) {
+  if (f.result) {
+    const w = f.result.winner;
+    return w === null ? [0, 0, 1] : (w === 0 ? [1, 0, 0] : [0, 1, 0]);
+  }
+  let a = 0, b = 0, d = 0;
+  const el = (f.r - 1) * EX * EX_SEC + f.x * EX_SEC;
+  const lam = el / (el + K.formTau), sd = Math.sqrt(1 - lam);
+  const mk = [0, 1].map((i) => el > 0 ? lam * (f.z[i] + (f.eta ? f.eta[i] : 0) * Math.sqrt(K.formTau / el)) : 0);
+  for (let i = 0; i < N; i++) {
+    const c = cloneFight(f);
+    /* Markkina ei näe vireitä suoraan: se päättelee ne kehästä, ja arvio tarkentuu ajan myötä.
+       Havainto y = z + virhe, virheen varianssi tau / kulunut aika → posteriori N(lam * y, 1 - lam). */
+    if (c.started && K.form > 0) {
+      c.z = mk.map((m) => m + sd * gauss(rng));
+      c.form = c.z.map(formOf);
+    }
+    const res = runToEnd(c, rng);
+    if (res.winner === null) d++; else if (res.winner === 0) a++; else b++;
+  }
+  return [a / N, b / N, d / N];
+}
+
+if (typeof module !== 'undefined') module.exports = { JK0, jkMods, aiJoker, playJoker, PTS, TACTICS, TACTIC_KEYS, aiTactic, chooseTactics, preFight, K, RATING, ROUNDS, EX, EX_SEC, stats, mulberry32, hashStr, newFight, cloneFight, step, runToEnd, marketFor, liveOdds, outcomeKey };
+
+</script>
+<script>
+document.documentElement.lang = 'fi';
+
+/* ===== Ottelijat =====
+   Vain Henrin antamat faktat. Sijat ovat ottelijakorttien ennusteet (1.–6.).
+   Uusi ottelija = uusi rivi tähän + kuva kansioon img/. Asentokuvat (poses) ovat valinnaisia. */
+const FIGHTERS = [
+  {
+    id: 'godzilla', etu: 'KARI', nick: 'GODZILLA', suku: 'SAVOLAINEN', img: 'img/godzilla.jpg', alt: 'Kari Savolainen nyrkkeilijänä',
+    paino: 105, sijat: { juoksu: 5, voima: 1, uinti: 5, hiihto: 6, padel: 4, yo: 3 },
+    jokeri: { name: 'KIVENNOSTO', icon: 'kivi', dur: 6, ai: 'opH', mods: { dmg: 1.6, throw: 0.08, cost: 1.6 },
+      desc: '24 sekuntia täyttä voimaa: isku +60 %, mutta kunto kuluu nopeasti.',
+      line: 'Godzilla nostaa kiven. Tällä kertaa kivi on {B}.' },
+    n: { nom: 'Godzilla', gen: 'Godzillan', par: 'Godzillaa', abl: 'Godzillalta', all: 'Godzillalle' },
+    lines: {
+      intro: ['Godzilla aloittaa kuin kiven edessä: suoraan ja kovaa.'],
+      hit: ['Godzilla osuu. Tankoa ei ollut, mutta liike oli tuttu.', 'Godzillan isku osuu. Suomen Vahvimmassa tätä kutsuttaisiin lämmittelyksi.'],
+      hitTaken: ['{A} osuu Godzillaan. Godzilla huomaa sen viiveellä.'],
+      tired: ['Godzilla hengittää kuin olisi kantanut kiven ylämäkeen.', 'Godzilla etsii katseellaan hissiä.'],
+      downed: ['Kivi olisi noussut nopeammin.'],
+      getup: ['105 kiloa nousee aina hitaasti, mutta nousee.'],
+      win: { stop: 'Ottelu ratkesi kuten voimaerä: nopeasti ja ilman yllätyksiä.', dec: 'Godzilla voittaa pisteillä. Kestävyyslajeista on nyt ensimmäinen havainto.' }
+    }
+  },
+  {
+    id: 'staga', etu: 'JANNE', nick: 'STAGA', suku: 'TOIVONEN', img: 'img/staga.jpg', alt: 'Janne Toivonen nyrkkeilijänä',
+    paino: 80, sijat: { juoksu: 4, voima: 5, uinti: 4, hiihto: 5, padel: 3, yo: 1 }, tasoitus: 3,
+    jokeri: { name: 'HEINOLAN YÖ', icon: 'kuu', dur: 12, ai: 'H', mods: { chin: 1.6, take: 0.5 }, instant: { H: 15 },
+      desc: '48 sekuntia Heinolan yön leukaa: iskut tuntuvat vähemmän, eikä mies kaadu helposti.',
+      line: 'Staga muistaa Heinolan yön. Mikään tässä kehässä ei ole sen kovempaa.' },
+    n: { nom: 'Staga', gen: 'Stagan', par: 'Stagaa', abl: 'Stagalta', all: 'Stagalle' },
+    lines: {
+      intro: ['Staga aloittaa kuin asuntonäytön: rauhassa, kaikki ovet auki.', 'Kapteenin lakki pysyy päässä. Toistaiseksi.'],
+      hit: ['Staga osuu. Kohde myydään siinä kunnossa kuin on.', 'Staga osuu ja korjaa rusettinsa.'],
+      flurry: ['Staga osuu kolmesti. Kotisalin laitteet olisivat ylpeitä, jos niitä olisi käytetty.'],
+      hitTaken: ['{A} osuu kovaa. Staga hymyilee. Heinolan yöt ovat kovempia.'],
+      tired: ['Staga hidastaa. Kuntotarkastus on yhä tekemättä.'],
+      downed: ['Rusetti on vinossa.'],
+      getup: ['Staga korjaa asunsa ennen kuin nostaa kädet.'],
+      special: [{ round: 2, p: 0.6, text: 'Isä Toke seuraa katsomosta. Toivosten sisäinen ranking ennallaan.' }],
+      win: { stop: 'Staga voittaa keskeytyksellä. Kaupat tehty, välityspalkkio neuvoteltavissa.', dec: 'Staga voittaa pisteillä. Kaupat tehty, välityspalkkio neuvoteltavissa.' }
+    }
+  },
+  {
+    id: 'jamo', etu: 'JARMO', nick: 'JAMO', suku: 'LAINE', img: 'img/jamo.jpg', alt: 'Jarmo Laine nyrkkeilijänä',
+    paino: 85, sijat: { juoksu: 3, voima: 2, uinti: 2, hiihto: 2, padel: 5, yo: 2 }, noShow: 0.15,
+    jokeri: { name: 'AAMUNELJÄ', icon: 'kello', dur: 8, ai: 'E', mods: { throw: 0.08, cost: 0.75 }, instant: { E: 25 },
+      desc: 'Kunto +25 % heti ja 32 sekuntia kovempaa tahtia pienemmällä kulutuksella.',
+      line: 'Jamon kello näyttää aamuneljää. Hänen päivänsä alkaa vasta nyt.' },
+    n: { nom: 'Jamo', gen: 'Jamon', par: 'Jamoa', abl: 'Jamolta', all: 'Jamolle' },
+    lines: {
+      intro: ['Jamo aloittaa. Aamuneljältä herännyt mies ei väsy ensimmäiseen erään.'],
+      hit: ['Jamo osuu. Kelkka painoi enemmän.', 'Jamo osuu tasaisesti. Hyroxin heikompi puolisko jäi kotiin.'],
+      miss: ['Jamo lyö ohi. Armeijan sählyssä arvioitu käsi-silmäkoordinaatio on yhä voimassa.'],
+      tired: ['Jamo hidastaa ensimmäistä kertaa sitten aamuneljän.'],
+      downed: ['Kaatuminen tapahtui ensimmäistä kertaa ilman kelkkaa.'],
+      getup: ['Jamo nousee nurisematta, kuin aamuneljältä.'],
+      special: [
+        { round: 1, p: 1, vs: 'godzilla', text: 'Jamo on nähty Godzillan salilla. Nyt selviää, oliko se vakoilua vai antautumista.' },
+        { round: 2, p: 0.4, text: 'Jamon kulmassa värisee puhelin. Kulma ei vastaa.' }
+      ],
+      noShow: 'Jamo ei saapunut. Instagramiin ilmestyi kuva tyhjästä kehästä.',
+      win: { stop: 'Jamo voittaa keskeytyksellä. Video on Instagramissa ennen kuin hanskat ovat pois.', dec: 'Jamo voittaa pisteillä. Video on Instagramissa ennen kuin pisteet on ehditty laskea.' }
+    }
+  },
+  {
+    id: 'pohje', etu: 'JUSTUS', nick: 'POHJE', suku: 'PÖYSTI', img: 'img/pohje.jpg', alt: 'Justus Pöysti nyrkkeilijänä',
+    paino: 84, sijat: { juoksu: 2, voima: 3, uinti: 1, hiihto: 1, padel: 1, yo: 4 }, tasoitus: -3,
+    jokeri: { name: 'SIVUASKEL', icon: 'maila', dur: 8, ai: 'any', mods: { hit: 0.12, dodge: 0.12 },
+      desc: '32 sekuntia padel-jalkoja: osuu useammin, ja häneen on vaikeampi osua.',
+      line: 'Pohje siirtyy sivuttain kuin padelkentällä. Video on jo kuvattu.' },
+    n: { nom: 'Pohje', gen: 'Pohjeen', par: 'Pohjetta', abl: 'Pohjeelta', all: 'Pohjeelle' },
+    lines: {
+      intro: ['Pohje astuu kehään. Polvi seuraa perässä omalla aikataulullaan.'],
+      hit: ['Pohje osuu. Instagramissa tämä olisi jo hidastettuna.', 'Pohje liikkuu sivuttain ja osuu. Nyt siitä on video.'],
+      hitTaken: ['Osuma nenään. Nenä on odottanut tätä koko uransa.'],
+      tired: ['Pohjeen polvi pyytää puheenvuoroa. Puheenjohtaja ei myönnä.'],
+      downed: ['Polvi antaa vihdoin lausuntonsa.'],
+      getup: ['Pohje nousee. Pohkeet hoitivat työn.'],
+      win: { stop: 'Pohje voittaa keskeytyksellä. Dozenille tulee kiireinen viikko.', dec: 'Pohje voittaa pisteillä. Dozenille tulee kiireinen viikko.' }
+    }
+  }
+];
+function byIdPose(id, p) { const f = FIGHTERS.find((x) => x.id === id); if (f) f.poses = p; }
+byIdPose('godzilla', {"punch": "img/godzilla-lyonti.jpg", "hit": "img/godzilla-osuma.jpg", "down": "img/godzilla-matossa.jpg", "win": "img/godzilla-voitto.jpg"});
+byIdPose('staga', {"punch": "img/staga-lyonti.jpg", "hit": "img/staga-osuma.jpg", "down": "img/staga-matossa.jpg", "win": "img/staga-voitto.jpg"});
+byIdPose('jamo', {"punch": "img/jamo-lyonti.jpg", "hit": "img/jamo-osuma.jpg", "down": "img/jamo-matossa.jpg", "win": "img/jamo-voitto.jpg"});
+byIdPose('pohje', {"punch": "img/pohje-lyonti.jpg", "hit": "img/pohje-osuma.jpg", "down": "img/pohje-matossa.jpg", "win": "img/pohje-voitto.jpg"});
+const SOON = 1; /* tyhjiä paikkoja tuleville ottelijoille */
+
+const GEN = {
+  start: ['Gongi soi. {A} ja {B} kohtaavat kehän keskellä.', 'Ensimmäinen erä. Kulmat ovat antaneet viimeiset neuvonsa.'],
+  r2: ['Toinen erä. Kulmamiehet ovat vaihtaneet taktiikkaa tai ainakin pyyhettä.', 'Toinen erä alkaa. Pistetaulu on nollattu vain kuvainnollisesti.'],
+  r3: ['Viimeinen erä. Kaikki pelivinkit ovat yhä voimassa.', 'Kolmas erä. Tästä eteenpäin kunto ratkaisee, tai sen puute.'],
+  big: ['Iso osuma {A.abl}. {B} ottaa sen vastaan, ei vapaaehtoisesti.', '{A.gen} oikea osuu. Kaksi pistettä, ei alennuksia.', 'Puhdas osuma {A.abl}. {B.gen} kulma katsoo kelloa.'],
+  lucky: ['Täysosuma {A.abl}. Tällaisia ei näe treenivideoilla.', '{A} löytää aukon. Katsomossa joku kaataa juomansa.'],
+  flurry: ['{A} osuu kolme kertaa peräkkäin. {B} harkitsee uutta strategiaa.', 'Sarja {A.abl}. {B} etsii köysiä.'],
+  quiet: ['Molemmat odottavat. Kumpikaan ei halua väsyä ensin.', 'Kehässä liikutaan, mutta ei lyödä. Katsomo tarkistaa puhelimiaan.', 'Hiljainen hetki. Pistetaulu ei liiku.', 'Kulmasta huudetaan ohjeita. Kumpikaan ei kuuntele.', 'Erotuomari muistuttaa, että lajina on nyrkkeily.'],
+  tired: ['{A.gen} kunto {E} %. Kestävyysosasto ei vastaa kommenttipyyntöihin.', '{A} hengittää raskaasti. Kunto {E} %.'],
+  formHi: ['{A} näyttää lämmittelyssä paremmalta kuin markkina odotti.'],
+  formLo: ['{A} haukottelee kehäesittelyssä. Päivän vire on kysymysmerkki.'],
+  formUp: ['{A} palaa erätauolta kuin olisi saanut uuden kertoimen. Toinen tuuli.', '{A.gen} kulmasta kuului jotain, mikä toimi. Vire nousee.'],
+  formDown: ['{A} istui erätauon liian mukavasti. Vire laskee.', '{A.gen} vire jäi jakkaralle.'],
+  downed: ['Lukema alkaa.'],
+  noShow: '{A} ei saapunut paikalle. Gongi soi silti.',
+  tac: {
+    paine: ['Kunto on huomisen ongelma.', 'Markkina pitää rohkeudesta, kunnes ei pidä.'],
+    saasto: ['Erä hoidetaan taloudellisesti.', 'Lyönnit ovat kalliita.'],
+    leuka: ['Riskienhallinta ennen kaikkea.', 'Varovaisuus on hinnoiteltu.']
+  }
+};
+const TAC_UI = {
+  paine: { label: 'PAINE', short: 'paine', desc: 'Enemmän lyöntejä. Kunto kuluu nopeammin.' },
+  saasto: { label: 'SÄÄSTÖ', short: 'säästö', desc: 'Vähemmän lyöntejä. Kunto palautuu tauolla.' },
+  leuka: { label: 'LEUKA ALAS', short: 'leuka alas', desc: 'Varovaisempi. Vaikeampi osua ja kaataa.' }
+};
+
+/* ===== Apurit ===== */
+const $ = (s) => document.querySelector(s);
+const byId = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const pct = (p) => Math.round(p * 100);
+const pctFi = (p) => { const v = p * 100; return (v >= 10 || v === 0 ? v.toFixed(0) : v.toFixed(1)).replace('.', ','); };
+const oddsTxt = (p) => (p <= 0.001 ? '–' : Math.min(999, 1 / p).toFixed(2));
+const mmss = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function fmt(str, ctx) {
+  return str.replace(/\{(A|B|W|L)(?:\.(\w+))?\}/g, (m, who, form) => {
+    const f = ctx[who]; if (!f) return m;
+    return f.n[form || 'nom'];
+  }).replace(/\{E\}/g, ctx.E != null ? ctx.E : '').replace(/\{n\}/g, ctx.n != null ? ctx.n : '');
+}
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ei tallennusta */ } }
+function lsJson(k, def) { try { const v = JSON.parse(lsGet(k) || 'null'); return v == null ? def : v; } catch (e) { return def; } }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function faceHtml(f) { return f ? `<span class="mface"><img src="${f.img}" alt=""></span>` : '<span class="mface empty"></span>'; }
+
+/* Asennot: esiladataan, jotta vaihto on välitön. */
+for (const f of FIGHTERS) if (f.poses) for (const k in f.poses) { const im = new Image(); im.src = f.poses[k]; }
+
+/* ===== Ääni: nyrkkeilykellon kilahdus WebAudiolla ===== */
+let soundOn = lsGet('vw-sim-sound') !== 'off';
+let actx = null;
+function bell(times) {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    for (let k = 0; k < times; k++) {
+      const t0 = actx.currentTime + k * 0.32;
+      [[880, 0.28], [1760, 0.12], [2430, 0.09], [3580, 0.05]].forEach(([fr, amp]) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine'; o.frequency.value = fr;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(amp, t0 + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + (fr < 1000 ? 1.9 : 0.9));
+        o.connect(g).connect(actx.destination);
+        o.start(t0); o.stop(t0 + 2);
+      });
+    }
+  } catch (e) { /* ääni ei käytettävissä */ }
+}
+function renderSound() {
+  const b = $('#sound');
+  b.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+  b.setAttribute('aria-label', soundOn ? 'Ääni päällä' : 'Ääni pois');
+  $('#sound-on').toggleAttribute('hidden', !soundOn);
+  $('#sound-off').toggleAttribute('hidden', soundOn);
+}
+$('#sound').addEventListener('click', () => { soundOn = !soundOn; lsSet('vw-sim-sound', soundOn ? 'on' : 'off'); renderSound(); if (soundOn) bell(1); else stopVox(); });
+renderSound();
+
+/* ===== Kuuluttaja: valmiiksi äänitetyt repliikit (ElevenLabs, Guy) ===== */
+const VOX = {
+  open: 'audio/01.mp3',
+  intro: { godzilla: 'audio/02.mp3', staga: 'audio/03.mp3', jamo: 'audio/04.mp3', pohje: 'audio/05.mp3' },
+  name: { godzilla: 'audio/06.mp3', staga: 'audio/07.mp3', jamo: 'audio/08.mp3', pohje: 'audio/09.mp3' },
+  KO: 'audio/10.mp3', TKO: 'audio/11.mp3', PTS: 'audio/12.mp3', RTD: 'audio/13.mp3', DRAW: 'audio/14.mp3',
+  noShow: { jamo: 'audio/15.mp3' },
+};
+const VOX_GAIN = { 'audio/15.mp3': 1.6 };   /* 15 on äänitetty muita hiljaisemmaksi */
+const voxBuf = {};
+let voxSrc = null, voxSeq = 0;
+function voxCtx() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  } catch (e) { return null; }
+}
+function voxLoad(url) {
+  if (!url || !voxCtx()) return Promise.resolve(null);
+  if (!voxBuf[url]) {
+    voxBuf[url] = fetch(url)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
+      .then((b) => new Promise((ok, no) => actx.decodeAudioData(b, ok, no)))
+      .catch(() => { delete voxBuf[url]; return null; });
+  }
+  return voxBuf[url];
+}
+function stopVox() {
+  voxSeq++;
+  if (voxSrc) { try { voxSrc.stop(); } catch (e) { /* jo pysähtynyt */ } voxSrc = null; }
+}
+/* Soittaa repliikit peräkkäin. Uusi kuulutus tai äänen sulkeminen katkaisee edellisen. */
+async function announce(urls) {
+  stopVox();
+  if (!soundOn || !voxCtx()) return;
+  const seq = voxSeq;
+  urls = urls.filter(Boolean);
+  const bufs = urls.map(voxLoad);
+  for (const p of bufs) {
+    const buf = await p;
+    if (seq !== voxSeq || !soundOn) return;
+    if (!buf) continue;
+    await new Promise((done) => {
+      const src = actx.createBufferSource(), g = actx.createGain();
+      g.gain.value = VOX_GAIN[urls[bufs.indexOf(p)]] || 1;
+      src.buffer = buf; src.connect(g).connect(actx.destination);
+      src.onended = done; voxSrc = src; src.start();
+    });
+    if (seq !== voxSeq) return;
+  }
+  voxSrc = null;
+}
+function voxResult(f) {
+  const r = f.result;
+  if (r.method === 'NOSHOW') return [VOX.noShow[f.ab[1 - r.winner].id]];
+  if (r.winner === null) return [VOX.DRAW];
+  return [VOX[r.method] || VOX.PTS, VOX.name[f.ab[r.winner].id]];
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2800);
+}
+
+/* ===== Näkymät ===== */
+const TAB_VIEWS = ['valinta', 'turnaus', 'ranking'];
+function show(view) {
+  for (const v of ['valinta', 'ottelu', 'tulos', 'turnaus', 'ranking']) $('#v-' + v).hidden = v !== view;
+  $('#livedot').hidden = view !== 'ottelu';
+  const tabbed = TAB_VIEWS.includes(view);
+  $('#tabs').hidden = !tabbed;
+  if (tabbed) {
+    document.querySelectorAll('#tabs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === view)));
+    $('#ctx').textContent = view === 'turnaus' ? 'GRAND PRIX' : view === 'ranking' ? 'RANKING' : 'SIMULAATTORI';
+  }
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => {
+  const t = b.dataset.tab;
+  if (t === 'valinta') renderSelect();
+  if (t === 'turnaus') renderGP();
+  if (t === 'ranking') renderRanking();
+  show(t);
+}));
+
+/* ===== Pelaajat: kuka valitsee taktiikat ===== */
+/* v10: oletus KONE. Uusi avain, jotta vanha tallennettu valinta ei ohita uutta oletusta. */
+let players = Number(lsGet('vw-sim-kulma') ?? 0);
+if (![0, 1, 2].includes(players)) players = 0;
+function renderPlayers() {
+  document.querySelectorAll('#players button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.p) === players)));
+  $('#players-note').textContent = players === 0 ? 'KONE VALITSEE MOLEMMILLE' : players === 1 ? 'SINÄ OHJAAT KULMAA 1' : 'KUMPIKIN OHJAA OMAA KULMAANSA';
+}
+document.querySelectorAll('#players button').forEach((b) => b.addEventListener('click', () => { players = Number(b.dataset.p); lsSet('vw-sim-kulma', String(players)); renderPlayers(); }));
+renderPlayers();
+
+/* ===== Markkina: 10 000 ottelua parille, siemen parin mukaan ===== */
+const markets = {};
+const marketJobs = {};
+function marketFor2(A, B) {
+  const key = A.id + '|' + B.id;
+  if (markets[key]) return Promise.resolve(markets[key]);
+  if (marketJobs[key]) return marketJobs[key];
+  marketJobs[key] = new Promise((resolve) => {
+    const rng = mulberry32(hashStr(key));
+    const N = 10000, CH = 1250;
+    const out = { w: [0, 0], draw: 0, cat: {}, N };
+    let done = 0;
+    (function chunk() {
+      for (let i = 0; i < CH && done < N; i++, done++) {
+        const res = runToEnd(newFight(A, B), rng);
+        if (res.winner === null) out.draw++; else out.w[res.winner]++;
+        const k = outcomeKey(res); out.cat[k] = (out.cat[k] || 0) + 1;
+      }
+      if (done < N) { setTimeout(chunk, 0); return; }
+      out.p = [out.w[0] / N, out.w[1] / N, out.draw / N];
+      markets[key] = out;
+      resolve(out);
+    })();
+  });
+  return marketJobs[key];
+}
+
+/* ===== Valinta ===== */
+let selected = ['godzilla', 'staga'];
+{
+  const s = lsJson('vw-sim-pair', null);
+  if (Array.isArray(s) && s.length === 2 && byId[s[0]] && byId[s[1]] && s[0] !== s[1]) selected = s;
+}
+const pairKey = () => selected.join('|');
+
+function buildRoster() {
+  const el = $('#roster');
+  el.innerHTML = '';
+  for (const f of FIGHTERS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.dataset.id = f.id;
+    b.innerHTML = `<span class="face"><img src="${f.img}" alt=""></span><span class="lbl">${f.nick}</span>`;
+    b.addEventListener('click', () => toggleFighter(f.id));
+    el.appendChild(b);
+  }
+  for (let i = 0; i < SOON; i++) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip soon'; b.disabled = true;
+    b.setAttribute('aria-label', 'Lisää ottelijoita tulossa');
+    b.innerHTML = '<span class="face"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" stroke="#5d534a" stroke-width="2" fill="none"></path></svg></span><span class="lbl">TULOSSA</span>';
+    el.appendChild(b);
+  }
+}
+function toggleFighter(id) {
+  const i = selected.indexOf(id);
+  if (i >= 0) selected.splice(i, 1);
+  else if (selected.length < 2) selected.push(id);
+  else selected[1] = id;
+  if (selected.length === 2) lsSet('vw-sim-pair', JSON.stringify(selected));
+  renderSelect();
+}
+const hcTxt = (f) => { const h = f.tasoitus || 0; return h > 0 ? '+' + h : h < 0 ? '−' + (-h) : '0'; };
+function statRows(a, b) {
+  const sa = stats(a), sb = stats(b), hc = !!(a.tasoitus || b.tasoitus);
+  return [
+    { k: 'PAINO · KG', s: hc ? 'PAINOSTA EI TASOITUSTA' : 'TASOITUSTA EI MYÖNNETTY', a: a.paino, b: b.paino, bars: false },
+    ...(hc ? [{ k: 'TASOITUS', s: 'EI VALITUSOIKEUTTA', a: hcTxt(a), b: hcTxt(b), bars: false }] : []),
+    { k: 'ISKU', s: 'ERÄ 2 · VOIMA', a: sa.P, b: sb.P },
+    { k: 'KESTO', s: 'ERÄT 1 · 3 · 4', a: sa.S, b: sb.S },
+    { k: 'JALKATYÖ', s: 'ERÄ 5 · PADEL', a: sa.F, b: sb.F },
+    { k: 'LEUKA', s: 'ERÄ 6 · HEINOLAN YÖ', a: sa.C, b: sb.C }
+  ];
+}
+function renderSelect() {
+  const fs = selected.map((id) => byId[id]);
+  for (let i = 0; i < 2; i++) {
+    const f = fs[i];
+    $('#si' + i).hidden = !f;
+    $('#sph' + i).hidden = !!f;
+    $('#ss' + i).hidden = !f;
+    if (f) { $('#si' + i).src = f.img; $('#si' + i).alt = f.alt; }
+    $('#sn1-' + i).textContent = f ? f.etu : '';
+    $('#sn2-' + i).textContent = f ? '”' + f.nick + '”' : '';
+    $('#sn3-' + i).textContent = f ? f.suku : '';
+  }
+  document.querySelectorAll('#roster .chip[data-id]').forEach((c) => {
+    const idx = selected.indexOf(c.dataset.id);
+    c.setAttribute('aria-pressed', idx >= 0 ? 'true' : 'false');
+    c.querySelector('.corner')?.remove();
+    const f = byId[c.dataset.id];
+    c.setAttribute('aria-label', idx >= 0 ? `${f.n.nom}, kulma ${idx + 1}` : f.n.nom);
+    if (idx >= 0) { const s = document.createElement('span'); s.className = 'corner'; s.textContent = idx + 1; c.appendChild(s); }
+  });
+  const tape = $('#tape');
+  if (fs.length < 2) {
+    tape.innerHTML = '<div class="trow"><span></span><span></span><div class="tl"><b>VALITSE</b><small>KAKSI OTTELIJAA</small></div><span></span><span></span></div>';
+    $('#tape-note').textContent = 'Ominaisuudet lasketaan ottelijakorttien ennustetuista sijoista.';
+    $('#mkt').textContent = 'Valitse kaksi ottelijaa alta.';
+    $('#jpair').innerHTML = '';
+    $('#gong').disabled = true;
+    return;
+  }
+  tape.innerHTML = statRows(fs[0], fs[1]).map((r) => {
+    const la = r.bars !== false && r.a > r.b, lb = r.bars !== false && r.b > r.a;
+    const bar = (v, lead, side) => r.bars === false ? '<span></span>' : `<div class="barwrap ${side}"><div class="bar${lead ? ' lead' : ''}" style="width:${v}%"></div></div>`;
+    return `<div class="trow"><span class="tv${la ? ' red' : ''}">${r.a}</span>${bar(r.a, la, 'l')}<div class="tl"><b>${r.k}</b><small>${r.s}</small></div>${bar(r.b, lb, 'r')}<span class="tv rt${lb ? ' red' : ''}">${r.b}</span></div>`;
+  }).join('');
+  $('#jpair').innerHTML = fs.map((f) => f.jokeri ? `<div class="jmini"><span class="ji">${jkSvg(f.jokeri)}</span><div><small>${esc(f.nick)} · JOKERI</small><b>${esc(f.jokeri.name)}</b><span>${esc(f.jokeri.desc)}</span></div></div>` : '<div></div>').join('');
+  const ns = fs.find((f) => f.noShow);
+  $('#tape-note').textContent = ns
+    ? `Ominaisuudet lasketaan ottelijakorttien ennustetuista sijoista. ${ns.n.gen} kertoimeen sisältyy saapumisriski.`
+    : 'Ominaisuudet lasketaan ottelijakorttien ennustetuista sijoista.';
+  const key = pairKey();
+  if (!markets[key]) {
+    $('#mkt').textContent = 'Hinnoitellaan…';
+    $('#gong').disabled = true;
+    for (let i = 0; i < 2; i++) $('#so' + i).textContent = '…';
+  }
+  marketFor2(fs[0], fs[1]).then((m) => { if (pairKey() === key) renderMarket(m); });
+}
+function renderMarket(m) {
+  const fs = selected.map((id) => byId[id]);
+  const fav = m.p[0] >= m.p[1] ? 0 : 1;
+  for (let i = 0; i < 2; i++) {
+    $('#so' + i).textContent = oddsTxt(m.p[i]);
+    $('#ss' + i).className = 'stamp ' + (i === 0 ? 'l' : 'r') + (i === fav ? ' red' : ' ink');
+  }
+  $('#mkt').textContent = '';   /* v11: 10 000 ottelun prosenttirivi pois näkyvistä (Henrin pyyntö) */
+  $('#gong').disabled = false;
+}
+
+/* ===== Ottelu ===== */
+let F = null, M = null, U = 1, timer = null, speed = 1, skipping = false, paused = false;
+let series = [], kdMarks = [], tally = null, cm = null, ctxFight = null;
+
+/* ===== Jokeri (v11): kortti ottelijan alla, kääntyvä iso kortti pelattaessa, kultainen kaista käyrällä ===== */
+const JK_ICON = {
+  kivi: '<path d="M3.5 18.5l2.2-7.2 5.3-4.8 6.4 1.9 3.1 6.4-2.1 3.7z"></path><path d="M11 6.5l1.5 5-3 3"></path>',
+  kuu: '<path d="M19.5 14.8A8 8 0 1 1 9.2 4.5a6.3 6.3 0 0 0 10.3 10.3z"></path>',
+  kello: '<circle cx="12" cy="12" r="8.5"></circle><path d="M12 12V6.5M12 12l4.3 2.5"></path>',
+  maila: '<ellipse cx="14" cy="9" rx="5.8" ry="6.3"></ellipse><path d="M10.2 13.8L4.5 20.5"></path><path d="M12 7h.01M15.5 7h.01M14 10.5h.01M12 12.5h.01M16 12.5h.01" stroke-width="2.4"></path>'
+};
+const jkSvg = (J) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${JK_ICON[J.icon] || ''}</svg>`;
+let jkMarks = [];
+function setupJokers() {
+  jkMarks = [];
+  $('#jreveal').hidden = true;
+  for (let i = 0; i < 2; i++) {
+    const J = F.ab[i].jokeri;
+    $('#jk' + i).innerHTML = J ? `<span class="ji">${jkSvg(J)}</span><span class="jt"><small></small><b>${esc(J.name)}</b></span><span class="jbar"></span>` : '';
+  }
+  renderJokers();
+}
+function renderJokers() {
+  for (let i = 0; i < 2; i++) {
+    const b = $('#jk' + i), J = F.ab[i].jokeri;
+    $('#fp' + i).classList.toggle('jon', !!J && F.jk[i] > 0 && !F.result);
+    if (!J) { b.className = 'jchip none'; b.disabled = true; continue; }
+    const st = F.jk[i], req = F.jkReq[i] && st === 0;
+    const can = F.ctl[i] && st === 0 && !F.result;
+    const cls = st > 0 && !F.result ? 'on' : st !== 0 ? 'used' : req ? 'req' : can ? 'can' : '';
+    const lab = cls === 'on' ? `PÄÄLLÄ ${st * EX_SEC} S` : cls === 'used' ? 'PELATTU' : req ? 'TULOSSA' : can ? 'PELAA' : 'JOKERI';
+    b.className = 'jchip ' + cls;
+    b.disabled = !can;
+    b.querySelector('small').textContent = lab;
+    b.querySelector('.jbar').style.width = cls === 'on' ? (st / J.dur * 100).toFixed(1) + '%' : '0';
+    b.setAttribute('aria-label', `${F.ab[i].n.gen} jokeri ${J.name}: ${J.desc} Tila: ${lab.toLowerCase()}.`);
+  }
+}
+[0, 1].forEach((i) => $('#jk' + i).addEventListener('click', () => {
+  if (!F || F.result || !F.ctl[i] || F.jk[i] !== 0) return;
+  F.jkReq[i] = !F.jkReq[i];
+  renderJokers();
+  if (paused) { refreshOdds(); if (F.jkReq[i]) toast(`${F.ab[i].n.nom} pelaa jokerin, kun gongi soi.`); }
+}));
+function jkChime() {
+  if (!soundOn || skipping) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    [523, 659, 784, 1047].forEach((fr, k) => {
+      const t0 = actx.currentTime + k * 0.07, o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'triangle'; o.frequency.value = fr;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      o.connect(g).connect(actx.destination);
+      o.start(t0); o.stop(t0 + 0.55);
+    });
+  } catch (e) { /* ääni ei käytettävissä */ }
+}
+function revealJoker(i) {
+  if (skipping) return;
+  const J = F.ab[i].jokeri, el = $('#jreveal');
+  const dur = speed === 4 ? 0.8 : 1.9;
+  el.hidden = true;
+  el.style.setProperty('--jd', dur + 's');
+  el.innerHTML = `<div class="jcard" style="--jx:${i === 0 ? -80 : 80}px"><span class="jc-c tl">J</span><span class="jc-c br">J</span><div class="jc-k">JOKERI</div><div class="jc-ic">${jkSvg(J)}</div><div class="jc-nick">”${esc(F.ab[i].nick)}”</div><div class="jc-name">${esc(J.name)}</div><div class="jc-desc">${esc(J.desc)}</div></div>`;
+  void el.offsetWidth;
+  el.hidden = false;
+  clearTimeout(revealJoker.t);
+  revealJoker.t = setTimeout(() => { el.hidden = true; }, dur * 1000);
+  jkChime();
+}
+function jkSummary(f) {
+  if (!f.result || f.result.method === 'NOSHOW') return '';
+  const parts = [0, 1].filter((i) => f.ab[i].jokeri).map((i) => {
+    const a = f.jkAt[i], nm = f.ab[i].jokeri.name.toLowerCase().replace(/^./, (c) => c.toUpperCase());
+    return a ? `${f.ab[i].n.nom} pelasi jokerin ${nm} ${a.r}. erässä (${mmss(a.t)}).` : `${f.ab[i].n.nom} ei ehtinyt pelata jokeriaan.`;
+  });
+  return parts.join(' ');
+}
+
+function setImg(i, kind) {
+  const f = F.ab[i], img = $('#fi' + i);
+  const src = kind && f.poses && f.poses[kind] ? f.poses[kind] : f.img;
+  if (img.getAttribute('src') !== src) img.src = src;
+  img.classList.toggle('pose', src !== f.img);
+}
+
+async function startFight(ids, opts) {
+  const [A, B] = ids.map((id) => byId[id]);
+  ctxFight = Object.assign({ mode: 'single' }, opts || {});
+  M = await marketFor2(A, B);
+  F = newFight(A, B);
+  F.ctl = ctxFight.ctl || [players >= 1, players >= 2];
+  U = M.p[0] < M.p[1] ? 0 : 1;
+  series = [{ el: 0, p: M.p[U] }];
+  kdMarks = [];
+  tally = { thrown: [0, 0], hits: [0, 0] };
+  cm = { prevPts: [0, 0], used: new Set(), lastFlavor: -9, lastAny: 0, tiredSaid: [false, false], recent: [], flurryRound: [0, 0], groups: {}, pending: [], saved: false };
+  speed = 1; skipping = false; paused = false;
+  clearTimeout(timer);
+  setupJokers();
+
+  for (let i = 0; i < 2; i++) {
+    const f = [A, B][i];
+    $('#fi' + i).alt = f.alt;
+    $('#fn' + i).textContent = '”' + f.nick + '”';
+    $('#fp' + i).className = 'portrait';
+    $('#fp' + i).querySelector('.mark')?.remove();
+    $('#lon' + i).textContent = f.nick;
+    setImg(i, null);
+  }
+  $('#ctx').textContent = ctxFight.mode === 'gp' ? 'GRAND PRIX · LIVE' : 'LIVE';
+  $('#chart-title').textContent = `${[A, B][U].n.gen.toUpperCase()} VOITTOTODENNÄKÖISYYS`;
+  $('#feed').innerHTML = '';
+  $('#corner').hidden = true;
+  $('#controls').hidden = false; $('#controls-end').hidden = true;
+  setSpeedButtons();
+  $('#strip').classList.add('live');
+  show('ottelu');
+  const myF = F;
+  const voxIntro = announce([ctxFight.mode === 'gp' ? null : VOX.open, VOX.intro[A.id], VOX.intro[B.id]]);
+  [VOX.name[A.id], VOX.name[B.id], VOX.KO, VOX.TKO, VOX.PTS, VOX.RTD, VOX.DRAW].forEach(voxLoad);
+  voxIntro.then(() => { if (F === myF && !F.result) bell(1); });
+
+  const evs = [];
+  preFight(F, Math.random, (e) => evs.push(e));
+  newGroup(1);
+  if (F.result) { handleEvents(evs); updateLive(evs); finish(); return; }
+  say(0, fmt(pick(GEN.start), { A, B }));
+  for (const f of [A, B]) {
+    const opp = f === A ? B : A;
+    if (f.lines.intro && Math.random() < 0.75) say(0, fmt(pick(f.lines.intro), { A: f, B: opp }));
+  }
+  specials(1);
+  handleEvents(evs);
+  updateLive(evs);
+  if (F.ctl.some(Boolean)) openCorner();
+  else {
+    sayTactics();
+    /* Ottelu alkaa vasta kun kuuluttaja on esitellyt ottelijat (enintään 25 s). */
+    await Promise.race([voxIntro, new Promise((ok) => setTimeout(ok, 25000))]);
+    if (F !== myF || F.result || skipping) return;
+    timer = setTimeout(tick, 900);
+  }
+}
+
+function tick() {
+  if (!F || F.result || paused) return;
+  const evs = [];
+  const done = step(F, Math.random, (e) => evs.push(e));
+  handleEvents(evs);
+  updateLive(evs);
+  if (done) { finish(); return; }
+  if (evs.some((e) => e.type === 'roundStart')) {
+    if (F.ctl.some(Boolean)) { timer = setTimeout(openCorner, speed === 4 ? 300 : 1200); return; }
+    sayTactics();
+  }
+  timer = setTimeout(tick, delayFor(evs));
+}
+function delayFor(evs) {
+  const base = speed === 4 ? 100 : 420;
+  let d = base;
+  if (evs.some((e) => e.type === 'kd')) d += speed === 4 ? 350 : 1500;
+  if (evs.some((e) => e.type === 'roundEnd')) d += speed === 4 ? 450 : 1800;
+  if (evs.some((e) => e.type === 'joker')) d += speed === 4 ? 650 : 1700;
+  return d;
+}
+function skipToEnd() {
+  clearTimeout(timer);
+  skipping = true;
+  if (paused) { closeCorner(false); }
+  F.ctl = [false, false];
+  while (F && !F.result) {
+    const evs = [];
+    step(F, Math.random, (e) => evs.push(e));
+    handleEvents(evs);
+    if (evs.some((e) => e.type === 'roundStart')) sayTactics();
+    updateLive(evs, 120);
+  }
+  finish(true);
+}
+function setSpeedButtons() {
+  document.querySelectorAll('#controls [data-speed]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.speed) === speed)));
+}
+document.querySelectorAll('#controls [data-speed]').forEach((b) => b.addEventListener('click', () => { speed = Number(b.dataset.speed); setSpeedButtons(); }));
+$('#skip').addEventListener('click', skipToEnd);
+
+/* Kulmamies erätauolla */
+function openCorner() {
+  if (!F || F.result) return;
+  paused = true;
+  clearTimeout(timer);
+  const ab = F.ab;
+  const tot = F.cards[0];
+  const cardTxt = F.r === 1 ? 'ERÄ ALKAMASSA' : `PISTEET ${tot[0]}–${tot[1]}`;
+  for (let i = 0; i < 2; i++) if (F.ctl[i]) F.tac[i] = aiTactic(F, i, Math.random);
+  const sides = [0, 1].filter((i) => F.ctl[i]).map((i) => `
+    <div class="cside" data-i="${i}">
+      <div class="cside-h"><span class="who">”${ab[i].nick}”</span><span>KUNTO ${Math.round(F.st[i].E)} %</span></div>
+      <div class="cside-sub">${ab[1 - i].n.gen} kunto ${Math.round(F.st[1 - i].E)} %.${ab[i].jokeri && F.jk[i] === 0 ? ` Jokeri ${esc(ab[i].jokeri.name)} on käyttämättä: napauta korttia ottelijan alla.` : ''}</div>
+      <div class="copts">${TACTIC_KEYS.map((k) => `<button type="button" class="copt" data-i="${i}" data-k="${k}" aria-pressed="${F.tac[i] === k}"><b>${TAC_UI[k].label}</b><small>${TAC_UI[k].desc}</small></button>`).join('')}</div>
+    </div>`).join('');
+  const c = $('#corner');
+  c.innerHTML = `<div class="corner-h"><b>KULMAMIES · ${F.r}. ERÄ</b><span>${cardTxt}</span></div>${sides}<button class="btn" type="button" id="corner-go">SOITA GONGIA</button>`;
+  c.hidden = false;
+  c.parentElement.classList.add('cornering');
+  c.parentElement.classList.toggle('two', F.ctl[0] && F.ctl[1]);
+  c.querySelectorAll('.copt').forEach((b) => b.addEventListener('click', () => {
+    const i = Number(b.dataset.i);
+    F.tac[i] = b.dataset.k;
+    c.querySelectorAll(`.copt[data-i="${i}"]`).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    refreshOdds();
+  }));
+  $('#corner-go').addEventListener('click', () => closeCorner(true));
+  refreshOdds();
+}
+function closeCorner(resume) {
+  $('#corner').hidden = true;
+  $('#corner').parentElement.classList.remove('cornering');
+  paused = false;
+  if (resume) {
+    sayTactics();
+    bell(1);
+    timer = setTimeout(tick, 500);
+  }
+}
+function sayTactics() {
+  const ab = F.ab;
+  const parts = [0, 1].map((i) => `${ab[i].n.nom} ${TAC_UI[F.tac[i]].short}`);
+  const hum = [0, 1].filter((i) => F.ctl[i]);
+  const tail = hum.length === 1 ? ' ' + pick(GEN.tac[F.tac[hum[0]]]) : '';
+  say(F.x * EX_SEC, `Kulmat: ${parts.join(', ')}.${tail}`);
+}
+function refreshOdds() {
+  const p = liveOdds(F, 500, Math.random);
+  for (let i = 0; i < 2; i++) {
+    $('#lov' + i).textContent = oddsTxt(p[i]);
+    $('#lo' + i).classList.toggle('hi', p[i] > p[1 - i]);
+  }
+}
+
+/* Selostus */
+function newGroup(r) {
+  const g = document.createElement('div');
+  g.className = 'grp';
+  g.innerHTML = `<div class="grp-h"><span>${r}. ERÄ</span><span class="r">KÄYNNISSÄ</span></div><div class="items"></div>`;
+  $('#feed').prepend(g);
+  cm.groups[r] = g;
+  $('#feed').scrollTop = 0;
+}
+function say(t, text, tag, tagCls) {
+  const g = cm.groups[F.r] || cm.groups[Math.max(...Object.keys(cm.groups).map(Number))];
+  const it = document.createElement('div');
+  it.className = 'item' + (skipping ? '' : ' new');
+  const ts = document.createElement('span'); ts.className = 't'; ts.textContent = mmss(t);
+  const tx = document.createElement('span'); tx.className = 'x';
+  if (tag) { const s = document.createElement('span'); s.className = 'tag' + (tagCls ? ' ' + tagCls : ''); s.textContent = tag; tx.appendChild(s); }
+  tx.appendChild(document.createTextNode(text));
+  it.append(ts, tx);
+  g.querySelector('.items').prepend(it);
+  cm.lastAny = F.x;
+}
+function fresh(list) {
+  if (!list || !list.length) return null;
+  const pool = list.filter((l) => !cm.used.has(l));
+  if (!pool.length) return null;
+  const l = pick(pool); cm.used.add(l); return l;
+}
+function specials(r) {
+  const [A, B] = F.ab;
+  for (const f of [A, B]) {
+    const opp = f === A ? B : A;
+    for (const s of f.lines.special || []) {
+      if (s.round !== r || cm.used.has(s.text)) continue;
+      if (s.vs && s.vs !== opp.id) continue;
+      if (Math.random() < s.p) {
+        cm.used.add(s.text);
+        if (s.round === 1) say(0, s.text);
+        else cm.pending.push({ text: s.text, at: 6 + Math.floor(Math.random() * 18) });
+      }
+    }
+  }
+}
+function flavorOk(gap) { return F.x - cm.lastFlavor >= gap || F.x < cm.lastFlavor; }
+
+function handleEvents(evs) {
+  const [A, B] = F.ab;
+  const ab = [A, B];
+  let flavorSaid = false;
+  for (const e of evs) {
+    switch (e.type) {
+      case 'form':
+        e.form.forEach((m, i) => {
+          if (m >= 1.25) say(0, fmt(pick(GEN.formHi), { A: ab[i] }));
+          else if (m <= 0.75) say(0, fmt(pick(GEN.formLo), { A: ab[i] }));
+        });
+        break;
+      case 'noshow': {
+        const f = ab[e.who];
+        say(0, f.lines.noShow || fmt(GEN.noShow, { A: f }), 'LUOVUTUS');
+        break;
+      }
+      case 'miss':
+        tally.thrown[e.a]++;
+        if (!flavorSaid && ab[e.a].lines.miss && Math.random() < 0.05 && flavorOk(5)) {
+          const l = fresh(ab[e.a].lines.miss);
+          if (l) { say(e.t, l); cm.lastFlavor = F.x; flavorSaid = true; }
+        }
+        break;
+      case 'hit': {
+        tally.thrown[e.a]++; tally.hits[e.a]++;
+        cm.recent.push({ x: F.x, r: F.r, a: e.a });
+        animHit(e.a, e.d, e.lucky ? 'flash' : (e.dmg >= 9 ? 'shake' : null));
+        popPts(e.a, e.pts);
+        if (flavorSaid) break;
+        const ctx = { A: ab[e.a], B: ab[e.d] };
+        let line = null;
+        if (e.lucky && flavorOk(1)) line = fresh(GEN.lucky) || fresh(GEN.big);
+        else if (e.dmg >= 13 && flavorOk(3) && Math.random() < 0.6) {
+          const r = Math.random();
+          line = (r < 0.45 && fresh(ab[e.a].lines.hit)) || (r < 0.75 && fresh(ab[e.d].lines.hitTaken)) || fresh(GEN.big);
+        } else {
+          const mine = cm.recent.filter((h) => h.r === F.r && F.x - h.x <= 3);
+          const byA = mine.filter((h) => h.a === e.a).length, byD = mine.filter((h) => h.a === e.d).length;
+          if (byA >= 3 && byD === 0 && cm.flurryRound[e.a] !== F.r && flavorOk(2)) {
+            cm.flurryRound[e.a] = F.r;
+            line = fresh(ab[e.a].lines.flurry) || pick(GEN.flurry);
+          }
+        }
+        if (line) { say(e.t, fmt(line, ctx)); cm.lastFlavor = F.x; flavorSaid = true; }
+        break;
+      }
+      case 'kd': {
+        kdMarks.push({ el: (F.r - 1) * EX * EX_SEC + e.t });
+        animDown(e.d, e.stays);
+        popPts(e.a, PTS.kd, true);
+        const ctx = { A: ab[e.a], B: ab[e.d] };
+        const tail = fresh(ab[e.d].lines.downed) || pick(GEN.downed);
+        say(e.t, fmt('{B} matossa. ', ctx) + tail, 'MATOSSA');
+        if (e.stays) say(e.t, fmt('{B} ei nouse. {A} voittaa tyrmäyksellä.', ctx), 'KO');
+        else {
+          const gu = Math.random() < 0.7 ? fresh(ab[e.d].lines.getup) : null;
+          say(e.t, `Nousee lukemassa ${e.count}.` + (gu ? ' ' + gu : ''));
+          setTimeout(() => animUp(e.d), skipping ? 0 : (speed === 4 ? 300 : 1300));
+        }
+        cm.lastFlavor = F.x; flavorSaid = true;
+        break;
+      }
+      case 'tko': {
+        const ctx = { A: ab[e.a], B: ab[e.d] };
+        animDown(e.d, true);
+        say(e.t, fmt('Erotuomari keskeyttää. {B} ei enää puolusta itseään. {A} voittaa.', ctx), 'TKO');
+        break;
+      }
+      case 'roundEnd': {
+        const pt = e.pts;
+        const w = pt[0] > pt[1] ? 0 : pt[1] > pt[0] ? 1 : null;
+        const sc = w === 1 ? `${pt[1]}–${pt[0]}` : `${pt[0]}–${pt[1]}`;
+        const tot = F.cards[0];
+        const txt = `${w === null ? `Erä tasan, ${sc}` : `Erä ${ab[w].n.all}, ${sc}`}. Pisteet ${tot[0]}–${tot[1]}. Kunto: ${A.n.nom} ${Math.round(F.st[0].E)} %, ${B.n.nom} ${Math.round(F.st[1].E)} %.`;
+        say(EX * EX_SEC, txt);
+        const h = cm.groups[e.r].querySelector('.grp-h .r');
+        h.textContent = w === null ? `TASAN ${sc}` : `${ab[w].nick} ${sc}`; h.classList.add('done');
+        break;
+      }
+      case 'rtd': {
+        const ctx = { A: ab[e.a], B: ab[e.d] };
+        animDown(e.d, true);
+        say(EX * EX_SEC, fmt('{B.gen} kulma heittää pyyhkeen erätauolla. {A} voittaa luovutuksella.', ctx), 'PYYHE');
+        break;
+      }
+      case 'formShift':
+        cm.formShift = e;
+        break;
+      case 'joker': {
+        const J = ab[e.i].jokeri;
+        jkMarks.push({ i: e.i, s: (e.r - 1) * EX * EX_SEC + e.t, e: null });
+        say(e.t, fmt(J.line, { A: ab[e.i], B: ab[1 - e.i] }), 'JOKERI · ' + J.name, 'jtag');
+        revealJoker(e.i);
+        cm.lastFlavor = F.x; flavorSaid = true;
+        break;
+      }
+      case 'jokerEnd': {
+        const m = jkMarks.find((k) => k.i === e.i && k.e === null);
+        if (m) m.e = (e.r - 1) * EX * EX_SEC + e.t;
+        break;
+      }
+      case 'roundStart':
+        cm.pending = [];
+        newGroup(e.r);
+        bell(1);
+        say(0, pick(e.r === 2 ? GEN.r2 : GEN.r3));
+        if (cm.formShift) {
+          const fs = cm.formShift; cm.formShift = null;
+          fs.form.forEach((m, i) => {
+            const dlt = m - fs.before[i];
+            if (dlt >= 0.25) say(0, fmt(pick(GEN.formUp), { A: ab[i] }));
+            else if (dlt <= -0.25) say(0, fmt(pick(GEN.formDown), { A: ab[i] }));
+          });
+        }
+        specials(e.r);
+        cm.lastFlavor = 0;
+        break;
+      case 'decision': {
+        const r = e.result;
+        const pt = e.pts, sc = r.winner === 1 ? `${pt[1]}–${pt[0]}` : `${pt[0]}–${pt[1]}`;
+        let txt;
+        if (r.winner === null) txt = `Pisteet tasan, ${sc}. Tasapeli. Kukaan ei ole tyytyväinen, mikä on reilun tuloksen merkki.`;
+        else txt = `Täysi aika. ${ab[r.winner].n.nom} voittaa pisteillä ${sc}.`;
+        say(EX * EX_SEC, txt, 'PISTEET');
+        break;
+      }
+    }
+  }
+  if (F.result || flavorSaid || !F.started) return;
+  const due = cm.pending.findIndex((s) => F.x >= s.at);
+  if (due >= 0) {
+    say(F.x * EX_SEC, cm.pending[due].text); cm.pending.splice(due, 1); cm.lastFlavor = F.x; return;
+  }
+  for (let i = 0; i < 2; i++) {
+    if (!cm.tiredSaid[i] && F.st[i].E < 30) {
+      cm.tiredSaid[i] = true;
+      const E = Math.round(F.st[i].E);
+      const l = fresh(ab[i].lines.tired);
+      say(F.x * EX_SEC, l ? l : fmt(pick(GEN.tired), { A: ab[i], E }));
+      cm.lastFlavor = F.x;
+      return;
+    }
+  }
+  if (F.x - Math.max(cm.lastFlavor, cm.lastAny) >= 10) {
+    const q = fresh(GEN.quiet);
+    if (q) say(F.x * EX_SEC, q);
+    cm.lastFlavor = F.x;
+  }
+}
+
+/* Animaatiot ja asennot */
+const poseTimers = [null, null];
+function popPts(i, n, kd) {
+  if (skipping || !n) return;
+  const p = $('#fp' + i);
+  p.querySelector('.ppop')?.remove();
+  const b = document.createElement('span'); b.className = 'ppop' + (kd ? ' kd' : ''); b.textContent = '+' + n;
+  p.appendChild(b);
+  setTimeout(() => b.remove(), 950);
+}
+function animHit(a, d, kind) {
+  if (skipping) return;
+  if (F.ab[a].poses || F.ab[d].poses) {
+    if (!$('#fp' + a).classList.contains('down')) { setImg(a, 'punch'); clearTimeout(poseTimers[a]); poseTimers[a] = setTimeout(() => { if (!$('#fp' + a).classList.contains('down')) setImg(a, null); }, speed === 4 ? 120 : 380); }
+    if (kind && !$('#fp' + d).classList.contains('down')) { setImg(d, 'hit'); clearTimeout(poseTimers[d]); poseTimers[d] = setTimeout(() => { if (!$('#fp' + d).classList.contains('down')) setImg(d, null); }, speed === 4 ? 140 : 450); }
+  }
+  if (!kind) return;
+  const p = $('#fp' + d);
+  p.classList.remove('shake', 'flash'); void p.offsetWidth; p.classList.add(kind);
+}
+function animDown(i, out) {
+  const p = $('#fp' + i);
+  clearTimeout(poseTimers[i]);
+  p.classList.add('down'); if (out) p.classList.add('out');
+  setImg(i, 'down');
+  p.querySelector('.mark')?.remove();
+  const m = document.createElement('span'); m.className = 'mark'; m.textContent = out ? 'KO' : 'MATOSSA';
+  p.appendChild(m);
+}
+function animUp(i) {
+  const p = $('#fp' + i);
+  if (p.classList.contains('out')) return;
+  p.classList.remove('down');
+  setImg(i, null);
+  p.querySelector('.mark')?.remove();
+}
+
+/* Live-näkymä */
+function updateLive(evs, n) {
+  const pauseNow = evs.some((e) => e.type === 'roundEnd');
+  let shownRound = F.r, secs = F.x * EX_SEC;
+  if (pauseNow || evs.some((e) => e.type === 'roundStart')) { shownRound = Math.max(1, F.r - (F.result ? 0 : 1)); secs = EX * EX_SEC; }
+  if (F.result && F.result.time) { shownRound = F.result.round || 1; secs = F.result.time; }
+  $('#crnd').textContent = `${shownRound} / ${ROUNDS}`;
+  $('#ctime').textContent = pauseNow && !F.result ? 'TAUKO' : mmss(secs);
+  /* Pisteet: osumista kertyvä pistetili livenä. Alla käynnissä olevan erän pisteet (tauolla edellisen erän). */
+  const tot = F.cards[0];
+  const ptsEl = $('#cpts');
+  const ptsHtml = `<span>${tot[0]}</span>–<span>${tot[1]}</span>`;
+  if (ptsEl.innerHTML !== ptsHtml) {
+    const prev = (cm.prevPts || [0, 0]);
+    ptsEl.innerHTML = ptsHtml;
+    [0, 1].forEach((i) => { if (tot[i] !== prev[i]) { const sp = ptsEl.children[i]; sp.classList.add('flip'); } });
+  }
+  cm.prevPts = tot.slice();
+  const between = pauseNow || (!F.result && F.x === 0 && F.r > 1);
+  const lastR = F.rounds[F.rounds.length - 1];
+  const rp = (!between && F.started && !F.result) ? F.acc.pts : (lastR ? lastR.pts : null);
+  $('#cnow').hidden = !rp;
+  if (rp) {
+    $('#cnowk').textContent = (!between && !F.result) ? 'TÄMÄ ERÄ' : `${lastR.r}. ERÄ`;
+    const v = `<span${rp[0] > rp[1] ? ' class="lead"' : ''}>${rp[0]}</span>–<span${rp[1] > rp[0] ? ' class="lead"' : ''}>${rp[1]}</span>`;
+    if ($('#cnowv').innerHTML !== v) $('#cnowv').innerHTML = v;
+  }
+  for (let i = 0; i < 2; i++) {
+    const E = Math.round(F.st[i].E);
+    $('#fe' + i).textContent = E + ' %';
+    const m = $('#fm' + i); m.style.width = E + '%'; m.classList.toggle('low', E < 30);
+    $('#fh' + i).textContent = `${tally.hits[i]} / ${tally.thrown[i]}`;
+  }
+  const p = liveOdds(F, n || 400, Math.random);
+  for (let i = 0; i < 2; i++) {
+    $('#lov' + i).textContent = oddsTxt(p[i]);
+    $('#lo' + i).classList.toggle('hi', p[i] > p[1 - i]);
+  }
+  const el = F.result ? Math.max(0, (F.result.round || 1) - 1) * EX * EX_SEC + (F.result.time || 0) : (F.r - 1) * EX * EX_SEC + F.x * EX_SEC;
+  const lastPt = series[series.length - 1], elx = Math.max(el, lastPt.el);
+  if (elx === lastPt.el) { if (series.length > 1) lastPt.p = p[U]; }
+  else series.push({ el: elx, p: p[U] });
+  renderJokers();
+  if (!skipping || F.result) drawChart();
+}
+function drawChart() {
+  const svg = $('#chart');
+  const W = Math.max(200, Math.round(svg.getBoundingClientRect().width || 290)), H = 64, top = 6, bot = 58;
+  const total = ROUNDS * EX * EX_SEC;
+  const X = (el) => (el / total * W).toFixed(1), Y = (p) => (bot - p * (bot - top)).toFixed(1);
+  const pts = series.map((s) => `${X(s.el)},${Y(s.p)}`).join(' ');
+  const last = series[series.length - 1], first = series[0];
+  const lx = Number(X(last.el)), ly = Number(Y(last.p));
+  const endLabelLeft = lx > W - 40;
+  let marks = '';
+  const nowEl = last.el;
+  for (const k of jkMarks) {
+    const x0 = Number(X(k.s)), x1 = Math.max(x0 + 3, Number(X(k.e === null ? Math.max(nowEl, k.s) : k.e)));
+    const lab = 'J · ' + F.ab[k.i].nick, right = x0 > W - 70;
+    marks += `<rect x="${x0}" y="${top}" width="${(x1 - x0).toFixed(1)}" height="${bot - top}" fill="rgba(194,147,42,.22)"></rect><line x1="${x0}" y1="${top}" x2="${x0}" y2="${bot}" stroke="#c2932a" stroke-width="1.5"></line><text x="${right ? x0 - 3 : x0 + 3}" y="${top + 9}" text-anchor="${right ? 'end' : 'start'}" font-family="Oswald, sans-serif" font-weight="600" font-size="8" letter-spacing="1" fill="#c2932a">${esc(lab)}</text>`;
+  }
+  for (const k of kdMarks) {
+    const x = Number(X(k.el));
+    marks += `<line x1="${x}" y1="${top}" x2="${x}" y2="${bot}" stroke="rgba(236,223,192,.28)" stroke-width="1" stroke-dasharray="2 2"></line><text x="${(x + 3).toFixed(1)}" y="${bot - 4}" font-family="Oswald, sans-serif" font-weight="600" font-size="8" letter-spacing="1" fill="rgba(236,223,192,.75)">KD</text>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('aria-label', `${F.ab[U].n.gen} voittotodennäköisyys: alussa ${pct(first.p)} %, nyt ${pct(last.p)} %.`);
+  svg.innerHTML =
+    `<line x1="0" y1="${top}" x2="${W}" y2="${top}" stroke="rgba(236,223,192,.12)" stroke-width="1"></line>` +
+    `<line x1="0" y1="32" x2="${W}" y2="32" stroke="rgba(236,223,192,.14)" stroke-width="1" stroke-dasharray="2 3"></line>` +
+    `<line x1="0" y1="${bot}" x2="${W}" y2="${bot}" stroke="rgba(236,223,192,.32)" stroke-width="1"></line>` +
+    `<line x1="${(W / 3).toFixed(1)}" y1="2" x2="${(W / 3).toFixed(1)}" y2="62" stroke="rgba(236,223,192,.22)" stroke-width="1"></line>` +
+    `<line x1="${(2 * W / 3).toFixed(1)}" y1="2" x2="${(2 * W / 3).toFixed(1)}" y2="62" stroke="rgba(236,223,192,.22)" stroke-width="1"></line>` +
+    marks +
+    `<polyline points="${pts}" fill="none" stroke="#c2932a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>` +
+    `<circle cx="${lx}" cy="${ly}" r="4" fill="#c2932a" stroke="#1b1714" stroke-width="2"></circle>` +
+    `<text x="3" y="${Math.max(12, Number(Y(first.p)) - 6)}" font-family="Oswald, sans-serif" font-weight="600" font-size="9" fill="rgba(236,223,192,.8)">${pct(first.p)} %</text>` +
+    (series.length > 1 && last.el > 0 ? `<text x="${endLabelLeft ? lx - 7 : lx + 7}" y="${Math.min(bot - 2, Math.max(11, ly + 4))}" text-anchor="${endLabelLeft ? 'end' : 'start'}" font-family="'Alfa Slab One', serif" font-size="11" fill="#c2932a">${pct(last.p)} %</text>` : '');
+}
+window.addEventListener('resize', () => { if (F && !$('#v-ottelu').hidden) drawChart(); });
+
+function finish(direct) {
+  clearTimeout(timer);
+  paused = false;
+  $('#corner').hidden = true;
+  $('#corner').parentElement.classList.remove('cornering');
+  $('#strip').classList.remove('live');
+  const r = F.result;
+  cm.pending = [];
+  bell(r.method === 'NOSHOW' ? 1 : 3);
+  stopVox();
+  const myF = F, vox = voxResult(F);
+  setTimeout(() => { if (F === myF) announce(vox); }, r.method === 'NOSHOW' ? 600 : 1100);
+  if (r.winner !== null && r.method !== 'NOSHOW') setImg(r.winner, 'win');
+  $('#controls').hidden = true; $('#controls-end').hidden = false;
+  drawChart();
+  if (!cm.saved) { cm.saved = true; recordFight(); }
+  renderResult();
+  if (direct) toResult();
+}
+function toResult() { $('#ctx').textContent = ctxFight.mode === 'gp' ? 'GRAND PRIX' : 'TULOS'; show('tulos'); }
+$('#to-result').addEventListener('click', toResult);
+
+/* ===== Tulos ===== */
+const METHOD = {
+  KO: (r) => ({ label: `TYRMÄYS\n${r.round}. ERÄ · ${mmss(r.time)}`, s: ['TYRMÄYS', 'KO', `${r.round}. ERÄ`], txt: `tyrmäyksellä ${r.round}. erässä (${mmss(r.time)})`, short: 'tyrmäyksellä' }),
+  TKO: (r) => ({ label: `TEKNINEN TYRMÄYS\n${r.round}. ERÄ · ${mmss(r.time)}`, s: ['TEKNINEN', 'TKO', `${r.round}. ERÄ`], txt: `teknisellä tyrmäyksellä ${r.round}. erässä (${mmss(r.time)})`, short: 'teknisellä tyrmäyksellä' }),
+  RTD: (r) => ({ label: `PYYHE ${r.round}. ERÄN JÄLKEEN`, s: ['LUOVUTUS', 'RTD', `${r.round}. ERÄ`], txt: `luovutuksella ${r.round}. erän jälkeen`, short: 'luovutuksella' }),
+  UD: (r, c) => ({ label: `YKSIMIELINEN PÄÄTÖS\n${c}`, s: ['PÄÄTÖS', '3–0', 'TUOMARIT'], txt: `yksimielisellä päätöksellä (${c})`, short: 'yksimielisellä päätöksellä' }),
+  SD: (r, c) => ({ label: `JAETTU PÄÄTÖS\n${c}`, s: ['PÄÄTÖS', '2–1', 'TUOMARIT'], txt: `jaetulla päätöksellä (${c})`, short: 'jaetulla päätöksellä' }),
+  PTS: (r, c) => ({ label: `PISTEVOITTO\n${c}`, s: ['PISTEET', 'PTS', 'TÄYSI AIKA'], txt: `pisteillä (${c})`, short: 'pisteillä' }),
+  DRAW: (r, c) => ({ label: `TASAPELI\n${c}`, s: ['PISTEET', '=', 'TASAPELI'], txt: '', short: 'tasapelillä' }),
+  NOSHOW: () => ({ label: 'LUOVUTUS · VASTUSTAJA EI SAAPUNUT', s: ['VASTUSTAJA', 'EI', 'SAAPUNUT'], txt: 'luovutuksella', short: 'luovutuksella' })
+};
+function cardsStr(f, w, sep) { return f.cards.map((c) => (w === 1 ? `${c[1]}–${c[0]}` : `${c[0]}–${c[1]}`)).join(sep); }
+function roundCells(f) {
+  const r = f.result, w = r.winner;
+  return [0, 1].map((i) => [1, 2, 3].map((rd) => {
+    const rec = f.rounds[rd - 1];
+    const stopRound = r.method === 'RTD' ? r.round + 1 : r.round;
+    if (rd === stopRound && w === i && ['KO', 'TKO', 'RTD'].includes(r.method)) return { v: r.method, m: true };
+    if (rec && rec.pts) return { v: String(rec.pts[i]) };
+    return { v: '–' };
+  }));
+}
+function totals(f) {
+  const hits = [0, 0], thr = [0, 0];
+  for (const rr of f.rounds) { hits[0] += rr.hits[0]; hits[1] += rr.hits[1]; thr[0] += rr.thrown[0]; thr[1] += rr.thrown[1]; }
+  return { hits, thr };
+}
+function fightSummary(f, m) {
+  const r = f.result, ab = f.ab, w = r.winner;
+  let s;
+  if (r.method === 'NOSHOW') s = ab[1 - w].lines.noShow || fmt(GEN.noShow, { A: ab[1 - w] });
+  else if (w === null) s = 'Tasapeli. Pistetaulu ei halunnut loukata ketään.';
+  else s = ['PTS', 'UD', 'SD'].includes(r.method) ? ab[w].lines.win.dec : ab[w].lines.win.stop;
+  if (w !== null && r.method !== 'NOSHOW' && m.p[w] < 0.4) s += ` Markkina hinnoitteli tämän kertoimella ${oddsTxt(m.p[w])}.`;
+  return s;
+}
+function renderResult() {
+  const r = F.result, ab = F.ab, w = r.winner;
+  const meta = METHOD[r.method](r, cardsStr(F, w, ' · '));
+  const draw = w === null;
+  $('#r-slab').textContent = draw ? 'TASAPELI' : 'VOITTAJA';
+  $('#r-win').classList.toggle('draw', draw);
+  const show0 = draw ? ab[0] : ab[w];
+  const winSrc = (f) => (f.poses && f.poses.win) ? f.poses.win : f.img;
+  $('#ri0').src = draw ? show0.img : winSrc(show0); $('#ri0').alt = show0.alt;
+  $('#ri0').classList.toggle('pose', !draw && !!(show0.poses && show0.poses.win));
+  $('#rp1').hidden = !draw;
+  if (draw) { $('#ri1').src = ab[1].img; $('#ri1').alt = ab[1].alt; }
+  $('#rs1').textContent = meta.s[0]; $('#rs2').textContent = meta.s[1]; $('#rs3').textContent = meta.s[2];
+  if (draw) { $('#rn2').textContent = `”${ab[0].nick}” · ”${ab[1].nick}”`; $('#rn3').textContent = 'EI VOITTAJAA'; }
+  else { $('#rn2').textContent = `”${ab[w].nick}”`; $('#rn3').textContent = `${ab[w].etu} ${ab[w].suku}`; }
+  $('#r-method').textContent = r.method === 'NOSHOW' ? `LUOVUTUS\n${ab[1 - w].nick} EI SAAPUNUT` : meta.label;
+  if (ctxFight.mode === 'gp' && draw) $('#r-method').textContent += `\nJATKOON OSUMILLA: ${ab[ctxFight.gpWinner].nick}`;
+  $('#r-summary').textContent = fightSummary(F, M);
+  $('#r-jk').textContent = jkSummary(F);
+  $('#r-jk').hidden = !$('#r-jk').textContent;
+
+  const sc = $('#r-score');
+  if (r.method === 'NOSHOW') sc.hidden = true;
+  else {
+    sc.hidden = false;
+    const cells = roundCells(F), t = totals(F);
+    sc.innerHTML = `<div class="srow h"><span style="text-align:left">ERÄ</span><span>1</span><span>2</span><span>3</span><span>OSUMAT</span></div>` +
+      [0, 1].map((i) => `<div class="srow"><span class="who${w === i ? ' red' : ''}">${ab[i].nick}</span>${cells[i].map((c) => `<span class="c${c.m ? ' m' : ''}">${c.v}</span>`).join('')}<span class="o">${t.hits[i]} / ${t.thr[i]}</span></div>`).join('');
+  }
+
+  const p = M.p;
+  $('#r-dist').innerHTML = `<i style="flex:${Math.max(1, Math.round(p[0] * 1000))} 1 0;background:var(--ink)"></i><i style="flex:${Math.max(1, Math.round(p[2] * 1000))} 1 0;background:var(--draw)"></i><i style="flex:${Math.max(1, Math.round(p[1] * 1000))} 1 0;background:var(--red)"></i>`;
+  $('#r-dist').setAttribute('aria-label', `10 000 simuloitua ottelua: ${ab[0].n.nom} voitti ${pct(p[0])} %, tasapeli ${pct(p[2])} %, ${ab[1].n.nom} voitti ${pct(p[1])} %.`);
+  $('#r-legend').innerHTML = `<span><i style="background:var(--ink)"></i>${ab[0].nick} ${pct(p[0])} %</span><span><i style="background:var(--draw)"></i>TASAPELI ${pct(p[2])} %</span><span><i style="background:var(--red)"></i>${ab[1].nick} ${pct(p[1])} %</span>`;
+  const key = outcomeKey(r), share = (M.cat[key] || 0) / M.N;
+  let f1;
+  if (draw) f1 = `Sama ottelu 10 000 kertaa: tasapeli syntyi ${pctFi(share)} %:ssa otteluista.`;
+  else if (r.method === 'NOSHOW') f1 = `Sama ottelu 10 000 kertaa: ${ab[1 - w].n.nom} jäi saapumatta ${pctFi(share)} %:ssa otteluista.`;
+  else {
+    const how = r.method === 'PTS' ? 'pisteillä' : 'keskeytyksellä';
+    f1 = `Sama ottelu 10 000 kertaa: ${ab[w].n.nom} voitti ${how} ${pctFi(share)} %:ssa otteluista.`;
+  }
+  $('#r-fine1').textContent = f1;
+  const s0 = (M.cat['0:STOP'] || 0) / M.N, s1 = (M.cat['1:STOP'] || 0) / M.N;
+  $('#r-fine2').textContent = `Keskeytykseen päättyi ${pctFi(s0 + s1)} %: ${ab[0].n.nom} ${pctFi(s0)} %, ${ab[1].n.nom} ${pctFi(s1)} %.`;
+  $('#copybox').hidden = true;
+  const gp = ctxFight.mode === 'gp';
+  $('#res-single').hidden = gp; $('#res-gp').hidden = !gp;
+  if (gp) $('#gp-continue').textContent = GP && GP.champion ? 'NÄYTÄ MESTARI' : 'JATKA TURNAUSTA';
+}
+
+function resultText() {
+  const r = F.result, ab = F.ab, w = r.winner;
+  const cs = cardsStr(F, w, ', ');
+  const meta = METHOD[r.method](r, cs);
+  let line;
+  if (w === null) line = `${ab[0].n.nom} ja ${ab[1].n.nom} ottelivat tasapelin (${cs}).`;
+  else if (r.method === 'NOSHOW') line = `${ab[w].n.nom} voitti luovutuksella: ${ab[1 - w].n.nom} ei saapunut.`;
+  else line = `${ab[w].n.nom} voitti ${ab[1 - w].n.gen} ${meta.txt}.`;
+  const odds = w === null ? '' : ` Simulaattorin kerroin ennen ottelua ${oddsTxt(M.p[w])}.`;
+  return `VIERUMÄKI SIMULAATTORI\n${line}${odds}`;
+}
+$('#copy').addEventListener('click', () => {
+  const text = resultText();
+  const fallback = () => {
+    const box = $('#copybox'); box.value = text; box.hidden = false; box.focus(); box.select();
+    toast('Kopioi teksti laatikosta ja liitä ryhmään.');
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('Kopioitu. Liitä WhatsApp-ryhmään.'), fallback);
+    else fallback();
+  } catch (e) { fallback(); }
+});
+$('#rematch').addEventListener('click', () => startFight(F.ab.map((f) => f.id)));
+$('#newfight').addEventListener('click', () => { renderSelect(); show('valinta'); });
+$('#gong').addEventListener('click', () => { if (markets[pairKey()]) startFight(selected.slice()); });
+
+/* ===== Tuloskortti kuvana (canvas → PNG) ===== */
+const loadImg = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+function spaced(ctx, text, x, y, sp, align) {
+  const chars = [...text];
+  const widths = chars.map((c) => ctx.measureText(c).width);
+  const total = widths.reduce((a, b) => a + b, 0) + sp * (chars.length - 1);
+  let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+  const prev = ctx.textAlign; ctx.textAlign = 'left';
+  chars.forEach((c, i) => { ctx.fillText(c, cx, y); cx += widths[i] + sp; });
+  ctx.textAlign = prev;
+  return total;
+}
+function coverDraw(ctx, img, x, y, w, h, fy) {
+  const r = Math.max(w / img.width, h / img.height);
+  const sw = w / r, sh = h / r;
+  const sx = (img.width - sw) / 2, sy = Math.max(0, Math.min(img.height - sh, (img.height - sh) * fy));
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+function slabC(ctx, text, y) {
+  ctx.font = '26px "Alfa Slab One", Georgia, serif';
+  const tw = ctx.measureText(text).width + 3 * (text.length - 1);
+  const bw = tw + 52, bx = 540 - bw / 2;
+  ctx.fillStyle = '#1b1714'; ctx.fillRect(70, y - 2, bx - 90, 4); ctx.fillRect(bx + bw + 20, y - 2, 1010 - (bx + bw + 20), 4);
+  ctx.fillStyle = '#b8232b'; ctx.fillRect(bx, y - 24, bw, 48);
+  ctx.fillStyle = '#ecdfc0'; ctx.textBaseline = 'middle'; spaced(ctx, text, 540, y + 1, 3, 'center'); ctx.textBaseline = 'alphabetic';
+}
+function stampC(ctx, cx, cy, rad, rot, t1, t2, t3) {
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
+  ctx.fillStyle = '#ecdfc0'; ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#b8232b'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, rad - 2, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, rad - 10, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#b8232b'; ctx.textBaseline = 'middle';
+  ctx.font = '600 15px Oswald, sans-serif'; spaced(ctx, t1, 0, -rad * 0.42, 3, 'center');
+  ctx.font = `${t2.length > 4 ? 30 : 46}px "Alfa Slab One", Georgia, serif`; ctx.textAlign = 'center'; ctx.fillText(t2, 0, 4);
+  ctx.font = '600 13px Oswald, sans-serif'; spaced(ctx, t3, 0, rad * 0.46, 2, 'center');
+  ctx.restore(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+}
+function wrapC(ctx, text, x, y, maxW, lh, maxLines) {
+  const words = text.split(' '); const lines = []; let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
+  if (cur) lines.push(cur);
+  lines.slice(0, maxLines).forEach((l, i) => ctx.fillText(l, x, y + i * lh));
+}
+async function buildCard(kind) {
+  try { await Promise.all(['64px Anton', '600 22px Oswald', '400 22px Oswald', '48px "Alfa Slab One"'].map((f) => document.fonts.load(f))); } catch (e) { /* varafontit */ }
+  const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createRadialGradient(540, 470, 100, 540, 470, 980);
+  g.addColorStop(0, '#ecdfc0'); g.addColorStop(0.5, '#ecdfc0'); g.addColorStop(1, '#e0cfa8');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1350);
+  ctx.strokeStyle = '#1b1714'; ctx.lineWidth = 7; ctx.strokeRect(27.5, 27.5, 1025, 1295);
+  ctx.lineWidth = 2; ctx.strokeRect(41, 41, 998, 1268);
+  ctx.fillStyle = '#1b1714'; ctx.font = '600 17px Oswald, sans-serif';
+  spaced(ctx, 'VIERUMÄKI WEEKEND · SIMULAATTORI', 70, 86, 6, 'left');
+  ctx.fillStyle = '#b8232b'; spaced(ctx, kind === 'gp' ? 'GRAND PRIX' : (ctxFight && ctxFight.mode === 'gp' ? 'GRAND PRIX · OTTELU' : 'VIRALLINEN TULOS'), 1010, 86, 6, 'right');
+  ctx.fillStyle = '#1b1714'; ctx.fillRect(70, 100, 940, 3);
+
+  let winner = null, both = null, title, nick2, name3, method, rows = [], summary, oddsLabel, oddsVal, st;
+  if (kind === 'gp') {
+    const champ = byId[GP.champion];
+    winner = champ;
+    title = 'GRAND PRIX -MESTARI'; nick2 = `”${champ.nick}”`; name3 = `${champ.etu} ${champ.suku}`;
+    const path = gpPath(GP.champion);
+    method = `${path.length} VOITTOA · ${new Date(GP.doneAt || Date.now()).toLocaleDateString('fi-FI')}`;
+    rows = path.map((p) => [p.label, `${p.opp ? p.opp.nick : '—'}`, p.how]);
+    summary = `${champ.n.nom} on Vierumäki Grand Prix -mestari.` + (GP.startOdds && GP.startOdds[GP.champion] < 0.4 ? ` Markkina hinnoitteli tämän ennen arvontaa kertoimella ${oddsTxt(GP.startOdds[GP.champion])}.` : ' Markkina ei yllättynyt.');
+    oddsLabel = 'TURNAUSKERROIN ENNEN ARVONTAA'; oddsVal = GP.startOdds && GP.startOdds[GP.champion] ? oddsTxt(GP.startOdds[GP.champion]) : '–';
+    st = ['MESTARI', 'GP', String(new Date(GP.doneAt || Date.now()).getFullYear())];
+  } else {
+    const r = F.result, ab = F.ab, w = r.winner;
+    const meta = METHOD[r.method](r, cardsStr(F, w, ' · '));
+    if (w === null) both = ab; else winner = ab[w];
+    title = w === null ? 'TASAPELI' : 'VOITTAJA';
+    nick2 = w === null ? `”${ab[0].nick}” · ”${ab[1].nick}”` : `”${ab[w].nick}”`;
+    name3 = w === null ? 'EI VOITTAJAA' : `${ab[w].etu} ${ab[w].suku}`;
+    method = (r.method === 'NOSHOW' ? `LUOVUTUS · ${ab[1 - w].nick} EI SAAPUNUT` : meta.label.replace('\n', ' · '));
+    if (r.method !== 'NOSHOW') {
+      const cells = roundCells(F), t = totals(F);
+      rows = [0, 1].map((i) => [ab[i].nick, ...cells[i].map((c) => c.v), `${t.hits[i]} / ${t.thr[i]}`]);
+    }
+    summary = fightSummary(F, M);
+    oddsLabel = 'SIMULAATTORIN KERROIN ENNEN OTTELUA';
+    oddsVal = w === null ? `${oddsTxt(M.p[0])} / ${oddsTxt(M.p[1])}` : oddsTxt(M.p[w]);
+    st = meta.s;
+  }
+  slabC(ctx, title, 140);
+  const px = 70, py = 182, pw = 940, ph = 560;
+  ctx.fillStyle = '#1b1714'; ctx.fillRect(px, py, pw, ph);
+  try {
+    if (both) {
+      const [i0, i1] = await Promise.all([loadImg(both[0].img), loadImg(both[1].img)]);
+      coverDraw(ctx, i0, px, py, pw / 2 - 3, ph, 0.15); coverDraw(ctx, i1, px + pw / 2 + 3, py, pw / 2 - 3, ph, 0.15);
+    } else {
+      const usePose = winner.poses && winner.poses.win;
+      const im = await loadImg(usePose ? winner.poses.win : winner.img);
+      coverDraw(ctx, im, px, py, pw, ph, usePose ? 0.08 : 0.16);
+    }
+  } catch (e) { /* kuva puuttuu: jätetään musta pohja */ }
+  const vg = ctx.createRadialGradient(540, py + ph * 0.42, 200, 540, py + ph * 0.42, 640);
+  vg.addColorStop(0, 'rgba(27,23,20,0)'); vg.addColorStop(1, 'rgba(27,23,20,.5)');
+  ctx.fillStyle = vg; ctx.fillRect(px, py, pw, ph);
+  ctx.strokeStyle = '#1b1714'; ctx.lineWidth = 4; ctx.strokeRect(px + 2, py + 2, pw - 4, ph - 4);
+  if (both) stampC(ctx, 540, py + ph / 2, 96, -0.14, st[0], st[1], st[2]);
+  else stampC(ctx, 924, py + 34, 90, 0.17, st[0], st[1], st[2]);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#b8232b'; ctx.font = `${nick2.length > 18 ? 44 : 62}px "Alfa Slab One", Georgia, serif`; ctx.fillText(nick2, 540, 822);
+  ctx.fillStyle = '#1b1714'; ctx.font = '84px Anton, Impact, sans-serif'; ctx.fillText(name3, 540, 912);
+  ctx.fillStyle = '#5d534a'; ctx.font = '600 21px Oswald, sans-serif'; spaced(ctx, method, 540, 956, 4, 'center');
+  ctx.textAlign = 'left';
+
+  let y = 990;
+  if (rows.length) {
+    ctx.fillStyle = '#1b1714'; ctx.fillRect(70, y, 940, 3);
+    if (kind === 'gp') {
+      rows.forEach((rw, i) => {
+        const ry = y + 46 + i * 50;
+        ctx.fillStyle = '#5d534a'; ctx.font = '600 17px Oswald, sans-serif'; spaced(ctx, rw[0], 80, ry, 4, 'left');
+        ctx.fillStyle = '#1b1714'; ctx.font = '34px Anton, Impact, sans-serif'; ctx.fillText(rw[1], 300, ry + 2);
+        ctx.fillStyle = '#5d534a'; ctx.font = '400 22px Oswald, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(rw[2], 1000, ry); ctx.textAlign = 'left';
+        if (i < rows.length - 1) { ctx.fillStyle = 'rgba(27,23,20,.2)'; ctx.fillRect(70, ry + 18, 940, 1.5); }
+      });
+      y += 20 + rows.length * 50;
+    } else {
+      const cols = [80, 520, 610, 700, 860];
+      ctx.fillStyle = '#5d534a'; ctx.font = '600 15px Oswald, sans-serif';
+      spaced(ctx, 'ERÄ', cols[0], y + 30, 4, 'left'); ['1', '2', '3'].forEach((h, k) => spaced(ctx, h, cols[k + 1], y + 30, 0, 'center')); spaced(ctx, 'OSUMAT', cols[4], y + 30, 4, 'center');
+      rows.forEach((rw, i) => {
+        const ry = y + 76 + i * 48;
+        ctx.fillStyle = (F.result.winner === i) ? '#b8232b' : '#1b1714'; ctx.font = '34px Anton, Impact, sans-serif'; ctx.fillText(rw[0], cols[0], ry);
+        ctx.fillStyle = '#1b1714'; ctx.textAlign = 'center';
+        [1, 2, 3].forEach((k) => { ctx.font = /^[A-Z]/.test(rw[k]) ? '22px "Alfa Slab One", Georgia, serif' : '34px Anton, Impact, sans-serif'; ctx.fillStyle = /^[A-Z]/.test(rw[k]) ? '#b8232b' : '#1b1714'; ctx.fillText(rw[k], cols[k], ry); });
+        ctx.fillStyle = '#5d534a'; ctx.font = '600 22px Oswald, sans-serif'; ctx.fillText(rw[4], cols[4], ry);
+        ctx.textAlign = 'left';
+      });
+      y += 146;
+    }
+    ctx.fillStyle = '#1b1714'; ctx.fillRect(70, y, 940, 3);
+  }
+  ctx.fillStyle = '#1b1714'; ctx.font = '400 25px Oswald, sans-serif'; ctx.textAlign = 'center';
+  wrapC(ctx, summary, 540, Math.max(y + 46, 1170), 880, 34, 2);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#1b1714'; ctx.fillRect(70, 1240, 940, 58);
+  ctx.fillStyle = '#c2932a'; ctx.font = '18px "Alfa Slab One", Georgia, serif'; spaced(ctx, oddsLabel, 92, 1276, 2, 'left');
+  ctx.font = '30px "Alfa Slab One", Georgia, serif'; ctx.textAlign = 'right'; ctx.fillText(oddsVal, 990, 1280); ctx.textAlign = 'left';
+  try {
+    const gr = await loadImg('img/grain.png');
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.3;
+    ctx.fillStyle = ctx.createPattern(gr, 'repeat'); ctx.fillRect(0, 0, 1080, 1350); ctx.restore();
+  } catch (e) { /* ilman raetta */ }
+  return cv;
+}
+function asciiName(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+async function saveCard(kind) {
+  let cv;
+  try { cv = await buildCard(kind); } catch (e) { toast('Tuloskortin piirtäminen epäonnistui.'); return; }
+  const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+  let name;
+  if (kind === 'gp') name = `Vierumaki-Grand-Prix-mestari-${asciiName(byId[GP.champion].nick)}.png`;
+  else {
+    const r = F.result, ab = F.ab;
+    name = r.winner === null ? `Vierumaki-Simulaattori-${asciiName(ab[0].nick)}-${asciiName(ab[1].nick)}-tasapeli.png` : `Vierumaki-Simulaattori-${asciiName(ab[r.winner].nick)}-voitti-${asciiName(ab[1 - r.winner].nick)}.png`;
+  }
+  const dl = window.claude && window.claude.use ? await window.claude.use('downloads').catch(() => null) : null;
+  if (dl && blob) {
+    try { await dl.save({ filename: name, data: blob }); toast('Tuloskortti tallennettu.'); return; }
+    catch (e) { if (e && e.code === 'declined') return; }
+  }
+  const url = URL.createObjectURL(blob);
+  $('#card-img').src = url;
+  $('#card-modal').hidden = false;
+  $('#card-close').focus();
+}
+$('#save-card').addEventListener('click', () => saveCard('fight'));
+$('#save-card-gp').addEventListener('click', () => saveCard('fight'));
+$('#card-close').addEventListener('click', () => { $('#card-modal').hidden = true; });
+
+/* ===== Turnaus ===== */
+let GP = lsJson('vw-sim-gp-v1', null);
+if (GP && (!GP.rounds || GP.rounds.some((rd) => rd.some((m) => (m.a && !byId[m.a]) || (m.b && !byId[m.b]))))) GP = null;
+function saveGPState() { lsSet('vw-sim-gp-v1', JSON.stringify(GP)); }
+function nextPow2(n) { let p = 1; while (p < n) p *= 2; return p; }
+function newGP() {
+  const ids = shuffle(FIGHTERS.map((f) => f.id));
+  const size = nextPow2(ids.length);
+  while (ids.length < size) ids.push(null);
+  const rounds = [];
+  let n = size / 2;
+  rounds.push(Array.from({ length: n }, (_, i) => ({ a: ids[2 * i], b: ids[2 * i + 1], res: null, w: null })));
+  while (n > 1) { n /= 2; rounds.push(Array.from({ length: n }, () => ({ a: null, b: null, res: null, w: null }))); }
+  GP = { id: 'gp' + Date.now().toString(36), createdAt: Date.now(), rounds, champion: null, startOdds: null, doneAt: null, saved: false };
+  advanceByes();
+  GP.startOdds = gpOdds(1500);
+  saveGPState();
+}
+function propagate() {
+  for (let ri = 0; ri < GP.rounds.length - 1; ri++) {
+    GP.rounds[ri].forEach((m, mi) => {
+      const nm = GP.rounds[ri + 1][Math.floor(mi / 2)];
+      const slot = mi % 2 === 0 ? 'a' : 'b';
+      if (m.w && nm[slot] !== m.w) nm[slot] = m.w;
+    });
+  }
+  const fin = GP.rounds[GP.rounds.length - 1][0];
+  if (fin.w && !GP.champion) { GP.champion = fin.w; GP.doneAt = Date.now(); }
+}
+function advanceByes() {
+  GP.rounds[0].forEach((m) => { if (!m.w && (m.a === null) !== (m.b === null)) { m.w = m.a || m.b; m.res = { method: 'BYE' }; } });
+  propagate();
+}
+function gpWinnerOf(f) {
+  const r = f.result;
+  if (r.winner !== null) return r.winner;
+  const t = totals(f);
+  return t.hits[0] === t.hits[1] ? (Math.random() < 0.5 ? 0 : 1) : (t.hits[0] > t.hits[1] ? 0 : 1);
+}
+function gpOdds(M2) {
+  const cnt = {};
+  for (let s = 0; s < M2; s++) {
+    const rs = GP.rounds.map((rd) => rd.map((m) => ({ a: m.a, b: m.b, w: m.w })));
+    for (let ri = 0; ri < rs.length; ri++) {
+      rs[ri].forEach((m, mi) => {
+        if (!m.w) {
+          if (m.a && m.b) {
+            const f = newFight(byId[m.a], byId[m.b]); runToEnd(f, Math.random);
+            m.w = gpWinnerOf(f) === 0 ? m.a : m.b;
+          } else m.w = m.a || m.b;
+        }
+        if (ri < rs.length - 1) { const nm = rs[ri + 1][Math.floor(mi / 2)]; nm[mi % 2 === 0 ? 'a' : 'b'] = m.w; }
+      });
+    }
+    const c = rs[rs.length - 1][0].w; cnt[c] = (cnt[c] || 0) + 1;
+  }
+  const out = {}; for (const f of FIGHTERS) out[f.id] = (cnt[f.id] || 0) / M2;
+  return out;
+}
+function roundName(ri) {
+  const left = GP.rounds.length - ri;
+  return left === 1 ? 'FINAALI' : left === 2 ? 'VÄLIERÄT' : left === 3 ? 'PUOLIVÄLIERÄT' : `${ri + 1}. KIERROS`;
+}
+function gpPath(id) {
+  const out = [];
+  GP.rounds.forEach((rd, ri) => rd.forEach((m) => {
+    if (m.w !== id) return;
+    const oppId = m.a === id ? m.b : m.a;
+    let how = 'vapaakierros';
+    if (m.res && m.res.method !== 'BYE') how = m.res.method === 'DRAW' ? 'tasapeli, jatkoon osumilla' : METHOD[m.res.method](m.res, '').short;
+    out.push({ label: roundName(ri), opp: oppId ? byId[oppId] : null, how });
+  }));
+  return out;
+}
+let gpOddsNow = null;
+function renderGP() {
+  if (!GP) newGP();
+  if (!gpOddsNow || gpOddsNow.id !== GP.id + ':' + gpDone()) gpOddsNow = { id: GP.id + ':' + gpDone(), p: GP.champion ? null : gpOdds(1200) };
+  const odds = gpOddsNow.p;
+  $('#gp-kicker').textContent = `${FIGHTERS.length} OTTELIJAA · PUDOTUSPELI`;
+  const parts = [];
+  GP.rounds.forEach((rd, ri) => {
+    parts.push(`<div class="bround"><span>${roundName(ri)}</span><span>${ri === 0 ? 'ARVOTTU' : ''}</span></div>`);
+    rd.forEach((m, mi) => {
+      const row = (id) => {
+        const f = id ? byId[id] : null;
+        const cls = m.w ? (m.w === id ? ' win' : ' lose') : '';
+        const o = f && odds && !m.w ? `<span class="modd">${oddsTxt(odds[id])}</span>` : '<span></span>';
+        return `<div class="mrow">${faceHtml(f)}<span class="mname${cls}">${f ? f.nick : 'ODOTTAA'}</span>${o}</div>`;
+      };
+      let res = '';
+      if (m.res && m.res.method !== 'BYE') {
+        const wf = byId[m.w];
+        res = m.res.method === 'DRAW' ? `TASAPELI · ${wf.nick} JATKOON OSUMILLA` : m.res.method === 'NOSHOW' ? `LUOVUTUS · ${byId[m.w === m.a ? m.b : m.a].nick} EI SAAPUNUT` : `${wf.nick} · ${METHOD[m.res.method](m.res, (m.res.cards || []).join(' · ')).label.split('\n')[0]}`;
+      } else if (m.res && m.res.method === 'BYE') res = 'VAPAAKIERROS';
+      const ready = !m.w && m.a && m.b;
+      const btns = ready ? `<div class="mbtns"><button class="btn sm" type="button" data-play="${ri}:${mi}">OTTELE</button><button class="btn sm ghost" type="button" data-sim="${ri}:${mi}">SIMULOI</button></div>` : '';
+      parts.push(`<div class="match">${row(m.a)}${row(m.b)}${res ? `<div class="mres">${res}</div>` : ''}${btns}</div>`);
+    });
+  });
+  $('#bracket').innerHTML = parts.join('');
+  $('#bracket').querySelectorAll('[data-play]').forEach((b) => b.addEventListener('click', () => playGPMatch(b.dataset.play, true)));
+  $('#bracket').querySelectorAll('[data-sim]').forEach((b) => b.addEventListener('click', () => playGPMatch(b.dataset.sim, false)));
+  const ch = $('#champ');
+  if (GP.champion) {
+    const c = byId[GP.champion];
+    const path = gpPath(GP.champion).filter((p) => p.opp).map((p) => `${p.label.toLowerCase()}: ${p.opp.nick.charAt(0) + p.opp.nick.slice(1).toLowerCase()}, ${p.how}`).join(' · ');
+    ch.innerHTML = `<div class="champ"><div class="portrait"><img src="${(c.poses && c.poses.win) || c.img}" alt="${esc(c.alt)}" class="${c.poses && c.poses.win ? 'pose' : ''}"></div><div><div class="k">GRAND PRIX -MESTARI</div><div class="n2">”${c.nick}”</div><div class="n3">${c.etu} ${c.suku}</div><div class="p">${esc(path)}. Kerroin ennen arvontaa ${GP.startOdds ? oddsTxt(GP.startOdds[c.id]) : '–'}.</div></div></div>`;
+  } else ch.innerHTML = '';
+  const acts = $('#gp-actions');
+  acts.innerHTML = GP.champion
+    ? `<button class="btn sm full" type="button" id="gp-card">TALLENNA MESTARIKORTTI</button><button class="btn sm ghost full" type="button" id="gp-new">UUSI TURNAUS</button>`
+    : `<button class="btn sm full" type="button" id="gp-simall">SIMULOI LOPUT</button><button class="btn sm ghost full" type="button" id="gp-new">ARVO UUSI KAAVIO</button>`;
+  $('#gp-new').addEventListener('click', () => { newGP(); gpOddsNow = null; renderGP(); });
+  if ($('#gp-simall')) $('#gp-simall').addEventListener('click', simulateRest);
+  if ($('#gp-card')) $('#gp-card').addEventListener('click', () => saveCard('gp'));
+}
+function gpDone() { return GP.rounds.flat().filter((m) => m.w).length; }
+function applyGPResult(ri, mi, f) {
+  const m = GP.rounds[ri][mi];
+  const wi = gpWinnerOf(f);
+  m.w = wi === 0 ? m.a : m.b;
+  m.res = { method: f.result.method, round: f.result.round, time: f.result.time, cards: f.cards.map((c) => (wi === 1 ? `${c[1]}–${c[0]}` : `${c[0]}–${c[1]}`)) };
+  propagate();
+  if (GP.champion && !GP.saved) { GP.saved = true; recordGP(); }
+  saveGPState();
+  return wi;
+}
+async function playGPMatch(key, live) {
+  const [ri, mi] = key.split(':').map(Number);
+  const m = GP.rounds[ri][mi];
+  if (live) { await startFight([m.a, m.b], { mode: 'gp', gpKey: key }); return; }
+  const A = byId[m.a], B = byId[m.b];
+  const mk = await marketFor2(A, B);
+  const f = newFight(A, B); runToEnd(f, Math.random);
+  F = f; M = mk; ctxFight = { mode: 'gp', gpKey: key, quiet: true };
+  applyGPResult(ri, mi, f);
+  recordFight(f, 'gp');
+  gpOddsNow = null;
+  renderGP();
+  const wf = byId[GP.rounds[ri][mi].w];
+  toast(`${wf.n.nom} jatkaa.`);
+}
+async function simulateRest() {
+  let guard = 0;
+  while (!GP.champion && guard++ < 20) {
+    const next = GP.rounds.flatMap((rd, ri) => rd.map((m, mi) => ({ m, key: `${ri}:${mi}` }))).find((x) => !x.m.w && x.m.a && x.m.b);
+    if (!next) break;
+    const [ri, mi] = next.key.split(':').map(Number);
+    const A = byId[next.m.a], B = byId[next.m.b];
+    await marketFor2(A, B);
+    const f = newFight(A, B); runToEnd(f, Math.random);
+    applyGPResult(ri, mi, f);
+    recordFight(f, 'gp');
+  }
+  gpOddsNow = null;
+  renderGP();
+  if (GP.champion) bell(3);
+}
+$('#gp-continue').addEventListener('click', () => { renderGP(); show('turnaus'); });
+
+/* ===== Tallennus: yhteinen tilasto (db) tai tämä laite ===== */
+const DATA = { db: null, user: null, canWrite: null, shared: false, fights: null, gps: null, me: null };
+let localFights = lsJson('vw-sim-fights-v1', []);
+let localGPs = lsJson('vw-sim-gps-v1', []);
+function fightRecord(f, mode) {
+  const r = f.result, t = totals(f);
+  return {
+    ts: Date.now(), a: f.ab[0].id, b: f.ab[1].id,
+    w: r.winner, m: r.method, r: r.round || 0, t: r.time || 0,
+    cards: f.cards.map((c) => c[0] + '-' + c[1]),
+    hits: t.hits, thrown: t.thr,
+    mode: mode || 'ottelu', by: DATA.me || null,
+    ctl: (f.ctl || [false, false]).filter(Boolean).length
+  };
+}
+async function writeShared(coll, rec) {
+  if (!DATA.db || DATA.canWrite === false) return false;
+  try { await DATA.db.collection(coll).add(rec); return true; }
+  catch (e) { if (e && (e.code === 'invalid_argument' || e.code === 'not_granted')) DATA.canWrite = false; return false; }
+}
+function recordFight(f, mode) {
+  f = f || F;
+  if (!f || !f.result) return;
+  const rec = fightRecord(f, mode || (ctxFight && ctxFight.mode === 'gp' ? 'gp' : 'ottelu'));
+  if (ctxFight && ctxFight.mode === 'gp' && f === F && !ctxFight.quiet && ctxFight.gpKey && !ctxFight.applied) {
+    const [ri, mi] = ctxFight.gpKey.split(':').map(Number);
+    ctxFight.gpWinner = applyGPResult(ri, mi, f);
+    ctxFight.applied = true;
+    gpOddsNow = null;
+  }
+  writeShared('fights', rec).then((ok) => {
+    if (!ok) { localFights.push(rec); localFights = localFights.slice(-300); lsSet('vw-sim-fights-v1', JSON.stringify(localFights)); }
+    if (!$('#v-ranking').hidden) renderRanking();
+  });
+}
+function recordGP() {
+  const fin = GP.rounds[GP.rounds.length - 1][0];
+  const rec = { ts: Date.now(), champ: GP.champion, runner: fin.a === GP.champion ? fin.b : fin.a, gp: GP.id, by: DATA.me || null };
+  writeShared('gps', rec).then((ok) => { if (!ok) { localGPs.push(rec); localGPs = localGPs.slice(-50); lsSet('vw-sim-gps-v1', JSON.stringify(localGPs)); } });
+}
+async function initData() {
+  const cl = window.claude;
+  if (!cl || !cl.use) { renderRanking(); return; }
+  try {
+    const [db, user] = await Promise.all([cl.use('db').catch(() => null), cl.use('user').catch(() => null)]);
+    DATA.db = db; DATA.user = user;
+    if (user) {
+      try { DATA.me = await user.id(); } catch (e) { DATA.me = null; }
+      try { DATA.canWrite = await user.can('data.write'); } catch (e) { DATA.canWrite = null; }
+    }
+    if (db) {
+      DATA.shared = true;
+      db.collection('fights').orderBy('ts', 'desc').limit(500).onSnapshot((snap) => {
+        DATA.fights = snap.docs.map((d) => d.data()).filter(Boolean);
+        if (!$('#v-ranking').hidden) renderRanking();
+      }, () => { DATA.shared = false; if (!$('#v-ranking').hidden) renderRanking(); });
+      db.collection('gps').orderBy('ts', 'desc').limit(50).onSnapshot((snap) => {
+        DATA.gps = snap.docs.map((d) => d.data()).filter(Boolean);
+        if (!$('#v-ranking').hidden) renderRanking();
+      }, () => {});
+    }
+  } catch (e) { /* paikallinen tila */ }
+  renderRanking();
+}
+
+/* ===== Ranking ===== */
+function computeRanking(fights) {
+  const R = {};
+  const ensure = (id) => (R[id] = R[id] || { id, elo: 1500, w: 0, l: 0, d: 0, ko: 0, form: [] });
+  for (const f of FIGHTERS) ensure(f.id);
+  const list = fights.slice().sort((x, y) => x.ts - y.ts);
+  for (const rec of list) {
+    if (!byId[rec.a] || !byId[rec.b]) continue;
+    const A = ensure(rec.a), B = ensure(rec.b);
+    const sa = rec.w === 0 ? 1 : rec.w === 1 ? 0 : 0.5;
+    if (rec.w === 0) { A.w++; B.l++; A.form.push('w'); B.form.push('l'); }
+    else if (rec.w === 1) { B.w++; A.l++; B.form.push('w'); A.form.push('l'); }
+    else { A.d++; B.d++; A.form.push('d'); B.form.push('d'); }
+    if (['KO', 'TKO', 'RTD'].includes(rec.m)) (rec.w === 0 ? A : B).ko++;
+    if (rec.m === 'NOSHOW') continue;
+    const ea = 1 / (1 + Math.pow(10, (B.elo - A.elo) / 400));
+    A.elo += 24 * (sa - ea); B.elo += 24 * ((1 - sa) - (1 - ea));
+  }
+  return Object.values(R).filter((x) => byId[x.id]).sort((x, y) => y.elo - x.elo || y.w - x.w);
+}
+function rankRowsHtml(rank) {
+  return `<div class="rrow h"><span></span><span></span><span>OTTELIJA</span><span style="text-align:right">ELO</span><span style="text-align:right">V–T–TP</span><span style="text-align:right">VIIME 5</span></div>` +
+    rank.map((x, i) => {
+      const f = byId[x.id];
+      const form = x.form.slice(-5).map((c) => `<i class="${c}"></i>`).join('');
+      return `<div class="rrow"><span class="pos">${i + 1}</span>${faceHtml(f)}<span class="nm">${f.nick}${x.ko ? `<small>${x.ko} × keskeytys</small>` : ''}</span><span class="elo">${Math.round(x.elo)}</span><span class="rec">${x.w}–${x.l}–${x.d}</span><span class="form">${form}</span></div>`;
+    }).join('');
+}
+
+/* Kausisimulaatio: tasainen otteluohjelma, kulmat arvotaan, ei tallennu. */
+function seasonFights(n, rng) {
+  const ids = FIGHTERS.map((f) => f.id), pairs = [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) pairs.push([ids[i], ids[j]]);
+  const order = shuffle(pairs.slice());
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    let [a, b] = order[k % order.length];
+    if (rng() < 0.5) [a, b] = [b, a];
+    const f = newFight(byId[a], byId[b]); runToEnd(f, rng);
+    out.push({ ts: k, a, b, w: f.result.winner, m: f.result.method });
+  }
+  return out;
+}
+let seasonToken = 0;
+function runSeason(n) {
+  const token = ++seasonToken;
+  const box = $('#season');
+  const rank = computeRanking(seasonFights(n, Math.random));
+  box.innerHTML = `<div class="rtable">${rankRowsHtml(rank)}</div><p class="src-note" id="season-note">${n} ottelua. Lasketaan, kuinka usein kukin olisi kauden ykkönen…</p>`;
+  const S = 200, first = {}; let done = 0;
+  (function chunk() {
+    if (token !== seasonToken) return;
+    for (let k = 0; k < 20 && done < S; k++, done++) {
+      const r = computeRanking(seasonFights(n, Math.random));
+      first[r[0].id] = (first[r[0].id] || 0) + 1;
+    }
+    if (done < S) { setTimeout(chunk, 0); return; }
+    const parts = FIGHTERS.map((f) => [f, (first[f.id] || 0) / S]).sort((x, y) => y[1] - x[1]).map(([f, p]) => `${f.n.nom} ${pctFi(p)} %`);
+    const el = $('#season-note');
+    if (el) el.textContent = `${n} ottelua. Sama kausi 200 kertaa, kauden ykkönen: ${parts.join(', ')}.`;
+  })();
+}
+document.querySelectorAll('[data-season]').forEach((b) => b.addEventListener('click', () => runSeason(Number(b.dataset.season))));
+
+function fiDate(ts) {
+  const d = new Date(ts);
+  return `${d.getDate()}.${d.getMonth() + 1}.`;
+}
+async function renderRanking() {
+  const shared = DATA.shared && DATA.fights !== null;
+  const fights = shared ? DATA.fights : localFights;
+  const gps = shared ? (DATA.gps || []) : localGPs;
+  let note;
+  if (shared) note = DATA.canWrite === false
+    ? 'Yhteinen tilasto. Sinun otteluitasi ei tallenneta siihen, koska sinulla ei ole muokkausoikeutta; ne jäävät tälle laitteelle.'
+    : 'Yhteinen tilasto: mukana kaikkien tallennusoikeudella pelatut ottelut.';
+  else note = 'Tämän laitteen tilasto.';
+  $('#src-note').textContent = note;
+  const rank = computeRanking(fights);
+  const played = rank.filter((x) => x.w + x.l + x.d > 0).length;
+  $('#rtable').innerHTML = rankRowsHtml(rank);
+  if (!played) $('#rtable').insertAdjacentHTML('beforeend', '<div class="empty-note">Ei vielä otteluita. Ranking alkaa ensimmäisestä ottelusta.</div>');
+  const recent = fights.slice().sort((x, y) => y.ts - x.ts).slice(0, 15);
+  const ids = [...new Set(recent.map((r) => r.by).concat(gps.map((g) => g.by)).filter(Boolean))];
+  let names = {};
+  if (DATA.user && ids.length) { try { names = await DATA.user.profiles(ids); } catch (e) { names = {}; } }
+  const who = (id) => (id && names[id] && names[id].name) || '';
+  $('#hist').innerHTML = recent.length ? recent.map((r) => {
+    const A = byId[r.a], B = byId[r.b];
+    if (!A || !B) return '';
+    let line;
+    if (r.w === null) line = `${A.n.nom} ja ${B.n.nom}: tasapeli`;
+    else {
+      const W = r.w === 0 ? A : B, L = r.w === 0 ? B : A;
+      line = `${W.n.nom} voitti ${L.n.gen} ${METHOD[r.m] ? METHOD[r.m]({ round: r.r, time: r.t }, '').short : ''}`;
+    }
+    const by = who(r.by);
+    const meta = [r.mode === 'gp' ? 'Grand Prix' : 'Ottelu', r.ctl ? `${r.ctl} pelaaja${r.ctl > 1 ? 'a' : ''}` : 'kone', by ? `pelasi ${by}` : ''].filter(Boolean).join(' · ');
+    return `<div class="hrow"><span class="d">${fiDate(r.ts)}</span><span class="x">${esc(line)}<small>${esc(meta)}</small></span></div>`;
+  }).join('') : '<div class="empty-note">Ottelut näkyvät tässä sitä mukaa kuin niitä pelataan.</div>';
+  $('#gphist').innerHTML = gps.length ? gps.slice().sort((x, y) => y.ts - x.ts).slice(0, 10).map((g) => {
+    const C = byId[g.champ], Rn = byId[g.runner];
+    if (!C) return '';
+    const by = who(g.by);
+    return `<div class="hrow"><span class="d">${fiDate(g.ts)}</span><span class="x">${esc(C.n.nom)}${Rn ? ` · finaalissa ${esc(Rn.n.nom)}` : ''}<small>${by ? 'pelasi ' + esc(by) : 'Grand Prix'}</small></span></div>`;
+  }).join('') : '<div class="empty-note">Ensimmäinen Grand Prix -mestari on vielä kruunaamatta.</div>';
+}
+
+/* ===== Käynnistys ===== */
+buildRoster();
+renderSelect();
+show('valinta');
+initData();
+</script>
+
+</body></html>
