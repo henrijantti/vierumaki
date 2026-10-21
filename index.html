@@ -1378,8 +1378,8 @@ const hcTxt = (f) => { const h = f.tasoitus || 0; return h > 0 ? '+' + h : h < 0
 function statRows(a, b) {
   const sa = stats(a), sb = stats(b), hc = !!(a.tasoitus || b.tasoitus);
   return [
-    { k: 'PAINO · KG', s: hc ? 'PAINOSTA EI TASOITUSTA' : 'TASOITUSTA EI MYÖNNETTY', a: a.paino, b: b.paino, bars: false },
-    ...(hc ? [{ k: 'TASOITUS', s: 'EI VALITUSOIKEUTTA', a: hcTxt(a), b: hcTxt(b), bars: false }] : []),
+    { k: 'PAINO · KG', s: '', a: a.paino, b: b.paino, bars: false },
+    /* Tasoitus vaikuttaa otteluun, mutta sitä ei näytetä (Henri 21.10.). */
     { k: 'ISKU', s: 'ERÄ 2 · VOIMA', a: sa.P, b: sb.P },
     { k: 'KESTO', s: 'ERÄT 1 · 3 · 4', a: sa.S, b: sb.S },
     { k: 'JALKATYÖ', s: 'ERÄ 5 · PADEL', a: sa.F, b: sb.F },
@@ -1418,7 +1418,7 @@ function renderSelect() {
   tape.innerHTML = statRows(fs[0], fs[1]).map((r) => {
     const la = r.bars !== false && r.a > r.b, lb = r.bars !== false && r.b > r.a;
     const bar = (v, lead, side) => r.bars === false ? '<span></span>' : `<div class="barwrap ${side}"><div class="bar${lead ? ' lead' : ''}" style="width:${v}%"></div></div>`;
-    return `<div class="trow"><span class="tv${la ? ' red' : ''}">${r.a}</span>${bar(r.a, la, 'l')}<div class="tl"><b>${r.k}</b><small>${r.s}</small></div>${bar(r.b, lb, 'r')}<span class="tv rt${lb ? ' red' : ''}">${r.b}</span></div>`;
+    return `<div class="trow"><span class="tv${la ? ' red' : ''}">${r.a}</span>${bar(r.a, la, 'l')}<div class="tl"><b>${r.k}</b>${r.s ? `<small>${r.s}</small>` : ''}</div>${bar(r.b, lb, 'r')}<span class="tv rt${lb ? ' red' : ''}">${r.b}</span></div>`;
   }).join('');
   $('#jpair').innerHTML = fs.map((f) => f.jokeri ? `<div class="jmini"><span class="ji">${jkSvg(f.jokeri)}</span><div><small>${esc(f.nick)} · JOKERI</small><b>${esc(f.jokeri.name)}</b><span>${esc(f.jokeri.desc)}</span></div></div>` : '<div></div>').join('');
   const ns = fs.find((f) => f.noShow);
