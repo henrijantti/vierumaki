@@ -1,4 +1,13 @@
-<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><meta name="description" content="Kuka vie illan pääottelun? Kertoimet auki, gongi soi.">
+<meta property="og:type" content="website"><meta property="og:url" content="https://henrijantti.github.io/vierumaki/">
+<meta property="og:title" content="Vierumäki Simulaattori"><meta property="og:description" content="Kuka vie illan pääottelun? Kertoimet auki, gongi soi.">
+<meta property="og:image" content="https://henrijantti.github.io/vierumaki/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1b1714">
+<meta name="apple-mobile-web-app-title" content="Vierumäki"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<title>Vierumäki Simulaattori</title>
+</head><body>
 <title>Vierumäki Simulaattori</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -470,6 +479,16 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
 .jchip.used b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .jchip.used .ji { opacity: .5; }
 .jchip.none { visibility: hidden; }
+/* Kapeat puhelimet (≤ 380 px): ottelijarivi ja jokerisirut mahtuvat kehykseen. */
+@media (max-width: 380px) {
+  .roster { gap: 4px; }
+  .chip { width: auto; flex: 0 1 56px; min-width: 0; }
+  .chip .face { width: 100%; height: auto; aspect-ratio: 1; }
+  .chip .lbl { letter-spacing: .8px; font-size: 8.5px; }
+  .jchip { grid-template-columns: minmax(0, 1fr); padding-left: 6px; }
+  .jchip .ji { display: none; }
+  .jchip .jt b { font-size: 12px; }
+}
 .portrait.jon { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--mustard); animation: jglow 1.4s ease-in-out infinite; }
 @keyframes jglow { 50% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--mustard), 0 0 16px 5px rgba(194, 147, 42, .6); } }
 .tag.jtag { background: var(--mustard); color: var(--ink); }
@@ -618,6 +637,10 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
       <div class="feed-wrap">
         <div class="feed" id="feed" aria-live="polite"></div>
         <div class="corner" id="corner" hidden></div>
+      </div>
+
+      <div class="controls" id="controls-intro" hidden>
+        <button class="btn sm" type="button" id="skip-intro">OHITA ESITTELY ›</button>
       </div>
 
       <div class="controls" id="controls">
@@ -1545,7 +1568,8 @@ async function startFight(ids, opts) {
   const myF = F;
   const voxIntro = announce([ctxFight.mode === 'gp' ? null : VOX.open, VOX.intro[A.id], VOX.intro[B.id]]);
   [VOX.name[A.id], VOX.name[B.id], VOX.KO, VOX.TKO, VOX.PTS, VOX.RTD, VOX.DRAW].forEach(voxLoad);
-  voxIntro.then(() => { if (F === myF && !F.result) bell(1); });
+  $('#controls-intro').hidden = !soundOn;
+  voxIntro.then(() => { if (F !== myF) return; $('#controls-intro').hidden = true; if (!F.result) bell(1); });
 
   const evs = [];
   preFight(F, Math.random, (e) => evs.push(e));
@@ -1609,6 +1633,7 @@ function setSpeedButtons() {
 }
 document.querySelectorAll('#controls [data-speed]').forEach((b) => b.addEventListener('click', () => { speed = Number(b.dataset.speed); setSpeedButtons(); }));
 $('#skip').addEventListener('click', skipToEnd);
+$('#skip-intro').addEventListener('click', () => { $('#controls-intro').hidden = true; stopVox(); });
 
 /* Kulmamies erätauolla */
 function openCorner() {
@@ -1986,7 +2011,7 @@ function finish(direct) {
   const r = F.result;
   cm.pending = [];
   bell(r.method === 'NOSHOW' ? 1 : 3);
-  stopVox();
+  stopVox(); $('#controls-intro').hidden = true;
   const myF = F, vox = voxResult(F);
   setTimeout(() => { if (F === myF) announce(vox); }, r.method === 'NOSHOW' ? 600 : 1100);
   if (r.winner !== null && r.method !== 'NOSHOW') setImg(r.winner, 'win');
