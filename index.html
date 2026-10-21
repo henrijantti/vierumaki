@@ -1532,6 +1532,38 @@ function renderJokers() {
   renderJokers();
   if (paused) { refreshOdds(); if (F.jkReq[i]) toast(`${F.ab[i].n.nom} pelaa jokerin, kun gongi soi.`); }
 }));
+/* Iskujen äänet: syntetisoitu tömähdys, ei äänitiedostoja. Taso 1 osuma, 2 iso osuma, 3 täysosuma, 4 kaato. */
+let punchLast = 0, punchNoise = null;
+function punch(level) {
+  if (!soundOn || skipping || !actx) return;
+  try {
+    if (actx.state === 'suspended') actx.resume();
+    const now = actx.currentTime;
+    if (level < 3 && now - punchLast < 0.09) return;
+    punchLast = now;
+    if (!punchNoise) {
+      const len = Math.floor(actx.sampleRate * 0.09);
+      punchNoise = actx.createBuffer(1, len, actx.sampleRate);
+      const d = punchNoise.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    }
+    const thud = (t0, vol, f0, dur, bright) => {
+      const out = actx.createGain(); out.gain.value = vol * 0.6; out.connect(actx.destination);   /* * 0.6: ei säröä */
+      const o = actx.createOscillator(), og = actx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(42, t0 + dur);
+      og.gain.setValueAtTime(0.0001, t0); og.gain.exponentialRampToValueAtTime(1, t0 + 0.004); og.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(og).connect(out); o.start(t0); o.stop(t0 + dur + 0.05);
+      const n = actx.createBufferSource(), bp = actx.createBiquadFilter(), ng = actx.createGain();
+      n.buffer = punchNoise; bp.type = 'bandpass'; bp.frequency.value = bright; bp.Q.value = 0.9; ng.gain.value = 0.9;
+      n.connect(bp).connect(ng).connect(out); n.start(t0);
+    };
+    const t0 = now + 0.005;
+    if (level === 1) thud(t0, 0.32, 150, 0.12, 1500);
+    else if (level === 2) thud(t0, 0.5, 125, 0.18, 1100);
+    else if (level === 3) { thud(t0, 0.7, 110, 0.24, 900); thud(t0 + 0.07, 0.3, 160, 0.1, 1800); }
+    else { thud(t0, 0.75, 105, 0.24, 900); thud(t0 + 0.42, 0.85, 70, 0.4, 500); }   /* isku + kanveesiin */
+  } catch (e) {}
+}
 function jkChime() {
   if (!soundOn || skipping) return;
   try {
@@ -1806,6 +1838,7 @@ function handleEvents(evs) {
         cm.recent.push({ x: F.x, r: F.r, a: e.a });
         animHit(e.a, e.d, e.lucky ? 'flash' : (e.dmg >= 9 ? 'shake' : null));
         popPts(e.a, e.pts);
+        punch(e.lucky ? 3 : e.dmg >= PTS.bigDmg ? 2 : 1);
         if (flavorSaid) break;
         const ctx = { A: ab[e.a], B: ab[e.d] };
         let line = null;
@@ -1828,6 +1861,7 @@ function handleEvents(evs) {
         kdMarks.push({ el: (F.r - 1) * EX * EX_SEC + e.t });
         animDown(e.d, e.stays);
         popPts(e.a, PTS.kd, true);
+        punch(4);
         const ctx = { A: ab[e.a], B: ab[e.d] };
         const tail = fresh(ab[e.d].lines.downed) || pick(GEN.downed);
         say(e.t, fmt('{B} matossa. ', ctx) + tail, 'MATOSSA');
