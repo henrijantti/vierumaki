@@ -8,7 +8,6 @@
 <meta name="apple-mobile-web-app-title" content="Vierumäki"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <title>Vierumäki Simulaattori</title>
 </head><body>
-<title>Vierumäki Simulaattori</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +37,7 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(ellipse at 50% 30%, var(--paper) 45%, var(--paper-2) 100%) fixed, var(--paper);
+  background: var(--paper);
   color: var(--ink);
   font-family: var(--f-body);
   font-size: 14px;
@@ -47,6 +46,7 @@ body {
   padding-block: 12px;
   -webkit-tap-highlight-color: transparent;
 }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 50% 30%, var(--paper) 45%, var(--paper-2) 100%); }
 button { font: inherit; color: inherit; }
 button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
 
@@ -510,9 +510,17 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
   .seg button { height: 36px; }
   #v-valinta .mkt { padding-top: 6px; }
   #gong { height: 46px; margin-top: 6px; }
+  /* Ottelunäkymä: selostus joustaa, jotta ohjaimet mahtuvat ruudulle. */
+  .feed-wrap { flex: 1 1 120px; min-height: 120px; }
+  .feed-wrap .feed { min-height: 100px; }
 }
 /* Kapeat puhelimet (≤ 380 px): ottelijarivi ja jokerisirut mahtuvat kehykseen. */
 @media (max-width: 380px) {
+  body { padding-block: 6px; }
+  .bill-inner { padding-top: 8px; padding-bottom: 8px; }
+  .tabs { margin-top: 5px; }
+  .feed-wrap { flex-basis: 90px; min-height: 90px; }
+  .feed-wrap .feed { min-height: 80px; }
   .roster { gap: 4px; }
   .chip { width: auto; flex: 0 1 56px; min-width: 0; }
   .chip .face { width: 100%; height: auto; aspect-ratio: 1; }
@@ -722,7 +730,7 @@ button:focus-visible, .chip:focus-visible { outline: 3px solid var(--red); outli
     <section class="view" id="v-turnaus" aria-label="Turnaus" hidden>
       <div class="slab"><span>VIERUMÄKI GRAND PRIX</span></div>
       <div class="kicker" id="gp-kicker">PUDOTUSPELI</div>
-      <p class="gp-sub" id="gp-sub">Kaavio arvotaan. Kertoin kertoo, kuinka todennäköisesti ottelija voittaa koko turnauksen.</p>
+      <p class="gp-sub" id="gp-sub">Kaavio arvotaan. Kerroin kertoo, kuinka todennäköisesti ottelija voittaa koko turnauksen.</p>
       <div class="bracket" id="bracket"></div>
       <div id="champ"></div>
       <div class="gp-actions" id="gp-actions"></div>
@@ -1091,11 +1099,11 @@ const FIGHTERS = [
     n: { nom: 'Godzilla', gen: 'Godzillan', par: 'Godzillaa', abl: 'Godzillalta', all: 'Godzillalle' },
     lines: {
       intro: ['Godzilla aloittaa kuin kiven edessä: suoraan ja kovaa.'],
-      hit: ['Godzilla osuu. Tankoa ei ollut, mutta liike oli tuttu.', 'Godzillan isku osuu. Suomen Vahvimmassa tätä kutsuttaisiin lämmittelyksi.'],
+      hit: ['Godzilla osuu. Tankoa ei ollut, mutta liike oli tuttu.', 'Godzillan isku osuu. Voimaerässä tätä kutsuttaisiin lämmittelyksi.'],
       hitTaken: ['{A} osuu Godzillaan. Godzilla huomaa sen viiveellä.'],
       tired: ['Godzilla hengittää kuin olisi kantanut kiven ylämäkeen.', 'Godzilla etsii katseellaan hissiä.'],
       downed: ['Kivi olisi noussut nopeammin.'],
-      getup: ['105 kiloa nousee aina hitaasti, mutta nousee.'],
+      getup: ['Raskas sarja nousee aina hitaasti, mutta nousee.'],
       win: { stop: 'Ottelu ratkesi kuten voimaerä: nopeasti ja ilman yllätyksiä.', dec: 'Godzilla voittaa pisteillä. Kestävyyslajeista on nyt ensimmäinen havainto.' }
     }
   },
@@ -1538,9 +1546,9 @@ function punch(level) {
   if (!soundOn || skipping || !actx) return;
   try {
     if (actx.state === 'suspended') actx.resume();
-    const now = actx.currentTime;
-    if (level < 3 && now - punchLast < 0.09) return;
-    punchLast = now;
+    const now = actx.currentTime, wall = performance.now() / 1000;
+    if (level < 3 && wall - punchLast < 0.09) return;
+    punchLast = wall;
     if (!punchNoise) {
       const len = Math.floor(actx.sampleRate * 0.09);
       punchNoise = actx.createBuffer(1, len, actx.sampleRate);
@@ -1561,7 +1569,7 @@ function punch(level) {
     if (level === 1) thud(t0, 0.32, 150, 0.12, 1500);
     else if (level === 2) thud(t0, 0.5, 125, 0.18, 1100);
     else if (level === 3) { thud(t0, 0.7, 110, 0.24, 900); thud(t0 + 0.07, 0.3, 160, 0.1, 1800); }
-    else { thud(t0, 0.75, 105, 0.24, 900); thud(t0 + 0.42, 0.85, 70, 0.4, 500); }   /* isku + kanveesiin */
+    else { thud(t0, 0.75, 105, 0.24, 900); thud(t0 + 0.42, 0.6, 70, 0.4, 500); }   /* isku + kanveesiin */
   } catch (e) {}
 }
 function jkChime() {
@@ -1644,8 +1652,9 @@ async function startFight(ids, opts) {
   const myF = F;
   const voxIntro = announce([ctxFight.mode === 'gp' ? null : VOX.open, VOX.intro[A.id], VOX.intro[B.id]]);
   [VOX.name[A.id], VOX.name[B.id], VOX.KO, VOX.TKO, VOX.PTS, VOX.RTD, VOX.DRAW].forEach(voxLoad);
-  $('#controls-intro').hidden = !soundOn;
-  voxIntro.then(() => { if (F !== myF) return; $('#controls-intro').hidden = true; if (!F.result) bell(1); });
+  const introBtn = soundOn && !F.ctl.some(Boolean);
+  $('#controls-intro').hidden = !introBtn; if (introBtn) $('#controls').hidden = true;
+  voxIntro.then(() => { if (F !== myF) return; endIntroControls(); if (!F.result && !F.ctl.some(Boolean)) bell(1); });
 
   const evs = [];
   preFight(F, Math.random, (e) => evs.push(e));
@@ -1709,7 +1718,8 @@ function setSpeedButtons() {
 }
 document.querySelectorAll('#controls [data-speed]').forEach((b) => b.addEventListener('click', () => { speed = Number(b.dataset.speed); setSpeedButtons(); }));
 $('#skip').addEventListener('click', skipToEnd);
-$('#skip-intro').addEventListener('click', () => { $('#controls-intro').hidden = true; stopVox(); });
+function endIntroControls() { $('#controls-intro').hidden = true; if (F && !F.result) $('#controls').hidden = false; }
+$('#skip-intro').addEventListener('click', () => { endIntroControls(); stopVox(); });
 
 /* Kulmamies erätauolla */
 function openCorner() {
@@ -1729,6 +1739,7 @@ function openCorner() {
   const c = $('#corner');
   c.innerHTML = `<div class="corner-h"><b>KULMAMIES · ${F.r}. ERÄ</b><span>${cardTxt}</span></div>${sides}<button class="btn" type="button" id="corner-go">SOITA GONGIA</button>`;
   c.hidden = false;
+  requestAnimationFrame(() => { try { c.scrollIntoView({ block: 'end', behavior: 'smooth' }); } catch (e) {} });
   c.parentElement.classList.add('cornering');
   c.parentElement.classList.toggle('two', F.ctl[0] && F.ctl[1]);
   c.querySelectorAll('.copt').forEach((b) => b.addEventListener('click', () => {
@@ -1745,6 +1756,8 @@ function closeCorner(resume) {
   $('#corner').parentElement.classList.remove('cornering');
   paused = false;
   if (resume) {
+    stopVox(); $('#controls-intro').hidden = true;   /* gongi katkaisee esittelyn */
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
     sayTactics();
     bell(1);
     timer = setTimeout(tick, 500);
@@ -1916,7 +1929,7 @@ function handleEvents(evs) {
       case 'roundStart':
         cm.pending = [];
         newGroup(e.r);
-        bell(1);
+        if (!skipping && !F.ctl.some(Boolean)) bell(1);   /* kulmatilassa kello soi vasta pelaajan gongista */
         say(0, pick(e.r === 2 ? GEN.r2 : GEN.r3));
         if (cm.formShift) {
           const fs = cm.formShift; cm.formShift = null;
@@ -2075,7 +2088,8 @@ function drawChart() {
     marks +
     `<polyline points="${pts}" fill="none" stroke="#c2932a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>` +
     `<circle cx="${lx}" cy="${ly}" r="4" fill="#c2932a" stroke="#1b1714" stroke-width="2"></circle>` +
-    `<text x="3" y="${Math.max(12, Number(Y(first.p)) - 6)}" font-family="Oswald, sans-serif" font-weight="600" font-size="9" fill="rgba(236,223,192,.8)">${pct(first.p)} %</text>` +
+    /* Alkuprosentti piiloon, kun nykyinen arvo on vielä sen päällä. */
+    (series.length > 1 && last.el > 0 && lx < 60 ? '' : `<text x="3" y="${Math.max(12, Number(Y(first.p)) - 6)}" font-family="Oswald, sans-serif" font-weight="600" font-size="9" fill="rgba(236,223,192,.8)">${pct(first.p)} %</text>`) +
     (series.length > 1 && last.el > 0 ? `<text x="${endLabelLeft ? lx - 7 : lx + 7}" y="${Math.min(bot - 2, Math.max(11, ly + 4))}" text-anchor="${endLabelLeft ? 'end' : 'start'}" font-family="'Alfa Slab One', serif" font-size="11" fill="#c2932a">${pct(last.p)} %</text>` : '');
 }
 window.addEventListener('resize', () => { if (F && !$('#v-ottelu').hidden) drawChart(); });
@@ -2170,7 +2184,7 @@ function renderResult() {
 
   const p = M.p;
   $('#r-dist').innerHTML = `<i style="flex:${Math.max(1, Math.round(p[0] * 1000))} 1 0;background:var(--ink)"></i><i style="flex:${Math.max(1, Math.round(p[2] * 1000))} 1 0;background:var(--draw)"></i><i style="flex:${Math.max(1, Math.round(p[1] * 1000))} 1 0;background:var(--red)"></i>`;
-  $('#r-dist').setAttribute('aria-label', `10 000 simuloitua ottelua: ${ab[0].n.nom} voitti ${pct(p[0])} %, tasapeli ${pct(p[2])} %, ${ab[1].n.nom} voitti ${pct(p[1])} %.`);
+  $('#r-dist').setAttribute('aria-label', `Simulaattorin mukaan ${ab[0].n.nom} voitti ${pct(p[0])} %, tasapeli ${pct(p[2])} %, ${ab[1].n.nom} voitti ${pct(p[1])} %.`);
   $('#r-legend').innerHTML = `<span><i style="background:var(--ink)"></i>${ab[0].nick} ${pct(p[0])} %</span><span><i style="background:var(--draw)"></i>TASAPELI ${pct(p[2])} %</span><span><i style="background:var(--red)"></i>${ab[1].nick} ${pct(p[1])} %</span>`;
   const key = outcomeKey(r), share = (M.cat[key] || 0) / M.N;
   let f1;
@@ -2498,7 +2512,7 @@ function renderGP() {
   const ch = $('#champ');
   if (GP.champion) {
     const c = byId[GP.champion];
-    const path = gpPath(GP.champion).filter((p) => p.opp).map((p) => `${p.label.toLowerCase()}: ${p.opp.nick.charAt(0) + p.opp.nick.slice(1).toLowerCase()}, ${p.how}`).join(' · ');
+    const path = gpPath(GP.champion).filter((p) => p.opp).map((p) => `${p.label.toLowerCase().replace(/ät$/, 'ä')}: ${p.opp.nick.charAt(0) + p.opp.nick.slice(1).toLowerCase()}, ${p.how}`).join(' · ');
     ch.innerHTML = `<div class="champ"><div class="portrait"><img src="${(c.poses && c.poses.win) || c.img}" alt="${esc(c.alt)}" class="${c.poses && c.poses.win ? 'pose' : ''}"></div><div><div class="k">GRAND PRIX -MESTARI</div><div class="n2">”${c.nick}”</div><div class="n3">${c.etu} ${c.suku}</div><div class="p">${esc(path)}. Kerroin ennen arvontaa ${GP.startOdds ? oddsTxt(GP.startOdds[c.id]) : '–'}.</div></div></div>`;
   } else ch.innerHTML = '';
   const acts = $('#gp-actions');
@@ -2675,7 +2689,7 @@ function runSeason(n) {
       first[r[0].id] = (first[r[0].id] || 0) + 1;
     }
     if (done < S) { setTimeout(chunk, 0); return; }
-    const parts = FIGHTERS.map((f) => [f, (first[f.id] || 0) / S]).sort((x, y) => y[1] - x[1]).map(([f, p]) => `${f.n.nom} ${pctFi(p)} %`);
+    const parts = FIGHTERS.map((f) => [f, (first[f.id] || 0) / S]).sort((x, y) => y[1] - x[1]).map(([f, p]) => `${f.n.nom} ${pctFi(p)}\u00a0%`);
     const el = $('#season-note');
     if (el) el.textContent = `${n} ottelua. Sama kausi 200 kertaa, kauden ykkönen: ${parts.join(', ')}.`;
   })();
