@@ -1,0 +1,1138 @@
+<!doctype html><html lang="fi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Vierumäki Hiihto</title>
+<meta name="description" content="Erä 4: 10 km hiihto. Sääennuste, voitelut ja kertoimet auki. Lyö vetosi ennen lähtölaukausta.">
+<meta property="og:type" content="website"><meta property="og:url" content="https://henrijantti.github.io/vierumaki/hiihto/">
+<meta property="og:title" content="Vierumäki Hiihto"><meta property="og:description" content="Erä 4: 10 km hiihto. Sääennuste, voitelut ja kertoimet auki. Lyö vetosi ennen lähtölaukausta."><meta property="og:image" content="https://henrijantti.github.io/vierumaki/hiihto/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="../favicon.png"><link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#1b1714">
+</head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&amp;family=Anton&amp;family=Oswald:wght@400;500;600;700&amp;display=swap">
+<style>
+/* Layout: sama juliste kuin nyrkkeilysimulaattorissa. Kaksoiskehys; näkymät lähtö → kisa → tulokset vaihtuvat paikallaan. Yksi paperi-ilme tarkoituksella. */
+:root {
+  --paper: #ecdfc0;
+  --paper-2: #e0cfa8;
+  --snow: #f2e8cf;
+  --ink: #1b1714;
+  --red: #b8232b;
+  --muted: #5d534a;
+  --rule: rgba(27, 23, 20, .2);
+  --rule-strong: rgba(27, 23, 20, .45);
+  --red-wash: rgba(184, 35, 43, .07);
+  --on-ink: #ecdfc0;
+  --f-display: Anton, Impact, 'Arial Narrow', sans-serif;
+  --f-body: Oswald, 'Arial Narrow', 'Helvetica Neue', sans-serif;
+  --f-slab: 'Alfa Slab One', Rockwell, 'Roboto Slab', Georgia, serif;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  box-sizing: border-box; min-height: 100%;
+  display: flex; flex-direction: column;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--f-body); font-size: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 50% 30%, var(--paper) 45%, var(--paper-2) 100%); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+button:disabled { cursor: not-allowed; }
+
+.bill { position: relative; flex: 1; width: 100%; max-width: 420px; margin: 0 auto; box-sizing: border-box; border: 4px solid var(--ink); padding: 4px; display: flex; flex-direction: column; }
+.bill::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: url(img/grain.png) repeat; background-size: 256px 256px; mix-blend-mode: multiply; opacity: .28; z-index: 20; }
+.bill-inner { flex: 1; border: 1.5px solid var(--ink); padding: 14px 16px 16px; display: flex; flex-direction: column; min-width: 0; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 7px; border-bottom: 2px solid var(--ink); font-weight: 600; font-size: 10px; line-height: 14px; letter-spacing: 2.5px; white-space: nowrap; }
+.topbar .ctx { display: inline-flex; align-items: center; gap: 6px; color: var(--red); }
+.livedot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); animation: pulse 1.2s steps(2, jump-none) infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+.sound { margin: -10px -8px -10px 0; width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: none; border: none; color: var(--ink); }
+.sound svg { width: 18px; height: 18px; }
+
+.view { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.slab { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+.slab::before, .slab::after { content: ""; flex: 1; height: 2px; background: var(--ink); }
+.slab span { background: var(--red); color: var(--on-ink); font-family: var(--f-slab); font-size: 14px; line-height: 19px; letter-spacing: 2px; padding: 4px 12px 3px 14px; white-space: nowrap; }
+.kicker { margin-top: 10px; text-align: center; font-weight: 600; font-size: 10px; line-height: 14px; letter-spacing: 3px; text-indent: 3px; color: var(--muted); }
+h1 { margin: 2px 0 0; text-align: center; font-family: var(--f-display); font-weight: 400; font-size: 58px; line-height: 1; letter-spacing: 1px; text-wrap: balance; }
+h1 .red { color: var(--red); }
+.lbl { font-weight: 600; font-size: 10px; letter-spacing: 2.5px; color: var(--muted); }
+
+/* Pelitila */
+.seg { display: grid; grid-template-columns: 1fr 1fr; margin-top: 12px; border: 2px solid var(--ink); }
+.seg button { background: transparent; border: none; padding: 8px 0 7px; font-weight: 600; font-size: 12px; letter-spacing: 2.5px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.room { margin-top: 10px; border: 1.5px dashed var(--rule-strong); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.room .row { display: flex; gap: 8px; align-items: stretch; }
+.room input { flex: 1; min-width: 0; box-sizing: border-box; border: 1.5px solid var(--ink); background: var(--snow); padding: 7px 10px; font-family: var(--f-slab); font-size: 18px; letter-spacing: 3px; font-variant-numeric: tabular-nums; }
+.room input::placeholder { color: var(--rule-strong); letter-spacing: 2px; }
+.btn { background: transparent; border: 2px solid var(--ink); font-weight: 600; font-size: 12px; letter-spacing: 2px; padding: 8px 12px; white-space: nowrap; }
+.btn.ink { background: var(--ink); color: var(--on-ink); }
+.code { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.code b { font-family: var(--f-slab); font-weight: 400; font-size: 34px; line-height: 1; letter-spacing: 4px; font-variant-numeric: tabular-nums; }
+.code span { text-align: right; font-weight: 600; font-size: 11px; letter-spacing: 1.5px; line-height: 15px; }
+.code span em { display: block; font-style: normal; font-family: var(--f-slab); font-size: 20px; letter-spacing: 1px; color: var(--red); font-variant-numeric: tabular-nums; }
+.hint { font-size: 12px; line-height: 16px; color: var(--muted); }
+
+/* Sääennuste */
+.wx { margin-top: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.wx div { border: 1.5px solid var(--rule-strong); padding: 6px 4px 5px; text-align: center; position: relative; min-width: 0; }
+.wx div.now { border: 2.5px solid var(--red); padding: 5px 3px 4px; }
+.wx b { display: block; font-family: var(--f-slab); font-weight: 400; font-size: 18px; line-height: 20px; font-variant-numeric: tabular-nums; }
+.wx i { display: block; font-style: normal; font-weight: 600; font-size: 8.5px; letter-spacing: 1px; line-height: 11px; text-transform: uppercase; }
+.wx small { display: block; font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+.wx .bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--ink); }
+.wxline { margin-top: 6px; font-size: 12px; line-height: 16px; text-align: center; color: var(--muted); }
+
+/* Lähtölista */
+.startlist { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.runner { display: grid; grid-template-columns: 22px 58px 1fr 58px; align-items: center; gap: 10px; text-align: left; background: transparent; border: 1.5px solid var(--rule-strong); padding: 6px 6px 6px 8px; position: relative; min-width: 0; }
+.runner:hover { border-color: var(--ink); }
+.runner[aria-pressed="true"] { border: 2.5px solid var(--red); padding: 5px 5px 5px 7px; background: var(--red-wash); }
+.bib { font-family: var(--f-slab); font-size: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+.mini { width: 58px; height: 58px; border: 2px solid var(--ink); box-sizing: border-box; overflow: hidden; background: var(--ink); }
+.mini img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.7); transform-origin: 47% 22%; }
+.who { min-width: 0; }
+.who .nick { font-family: var(--f-display); font-size: 22px; line-height: 24px; letter-spacing: .5px; text-transform: uppercase; }
+.who .nm { font-weight: 600; font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+.who .q { font-size: 11.5px; line-height: 14px; margin-top: 3px; }
+.who .wax { margin-top: 4px; font-weight: 600; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; }
+.who .wax em { font-style: normal; color: var(--red); }
+.odds { width: 56px; height: 56px; border-radius: 50%; box-sizing: border-box; border: 2px solid currentColor; box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px currentColor; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--paper); transform: rotate(-6deg); justify-self: end; }
+.odds i { font-style: normal; font-weight: 600; font-size: 6.5px; letter-spacing: 1px; line-height: 8px; }
+.odds b { font-family: var(--f-slab); font-weight: 400; font-size: 15px; line-height: 17px; font-variant-numeric: tabular-nums; }
+.odds s { text-decoration: none; font-size: 7px; letter-spacing: .5px; color: var(--muted); line-height: 9px; }
+.odds.red { color: var(--red); }
+.vtag { position: absolute; top: -9px; right: 70px; background: var(--red); color: var(--on-ink); font-family: var(--f-slab); font-size: 10px; letter-spacing: 1.5px; padding: 1px 7px; }
+
+/* Vetomarkkina */
+.mk { margin-top: 10px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: none; background: transparent; border: 1.5px solid var(--ink); font-weight: 600; font-size: 10.5px; letter-spacing: 1.5px; padding: 6px 9px 5px; }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.opts.one { grid-template-columns: 1fr; }
+.opt { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; background: transparent; border: 1.5px solid var(--rule-strong); padding: 7px 8px 6px; min-width: 0; }
+.opt span { font-weight: 600; font-size: 11px; letter-spacing: 1px; line-height: 14px; text-transform: uppercase; min-width: 0; }
+.opt b { font-family: var(--f-slab); font-weight: 400; font-size: 15px; font-variant-numeric: tabular-nums; flex: none; }
+.opt[aria-pressed="true"] { border: 2.5px solid var(--red); padding: 6px 7px 5px; background: var(--red-wash); }
+.opt:disabled { opacity: .4; }
+.opt .up { color: var(--red); }
+.pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; }
+.pair .vs { font-family: var(--f-slab); font-size: 11px; color: var(--muted); }
+.mkfoot { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.chip { background: transparent; border: 1.5px solid var(--ink); font-family: var(--f-slab); font-size: 14px; padding: 6px 0 5px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.chip:disabled { opacity: .35; }
+.place { margin-top: 8px; width: 100%; background: var(--red); color: var(--on-ink); border: none; font-family: var(--f-display); font-size: 19px; letter-spacing: 1.5px; padding: 9px 8px 8px; }
+.place:disabled { background: var(--rule-strong); }
+.kassa { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.kassa .amt { font-family: var(--f-slab); font-size: 24px; font-variant-numeric: tabular-nums; }
+.mkmsg { margin-top: 6px; font-size: 12px; line-height: 16px; color: var(--red); min-height: 16px; text-align: center; }
+.closed { margin-top: 10px; text-align: center; font-weight: 600; font-size: 11px; letter-spacing: 2px; color: var(--muted); padding: 10px 0; border: 1.5px dashed var(--rule-strong); }
+
+/* Kuponki */
+.slip { margin-top: 10px; display: flex; flex-direction: column; }
+.slip .h { display: flex; justify-content: space-between; font-weight: 600; font-size: 10px; letter-spacing: 2.5px; color: var(--muted); padding-bottom: 4px; border-bottom: 2px solid var(--ink); }
+.bet { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: 12.5px; line-height: 16px; }
+.bet .k { font-family: var(--f-slab); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bet .x { background: none; border: none; width: 28px; height: 26px; margin: -4px -4px -4px 0; font-size: 16px; color: var(--muted); }
+.bet .live { color: var(--red); font-weight: 600; font-size: 9px; letter-spacing: 1.5px; margin-left: 4px; }
+
+.go { margin-top: 14px; width: 100%; background: var(--ink); color: var(--on-ink); border: none; font-family: var(--f-display); font-size: 24px; letter-spacing: 2px; padding: 12px 10px 11px; }
+.go small { display: block; font-family: var(--f-body); font-weight: 600; font-size: 10px; letter-spacing: 2.5px; opacity: .8; margin-top: 2px; }
+.go:disabled { opacity: .55; }
+.go.alt { background: transparent; color: var(--ink); border: 2px solid var(--ink); font-size: 18px; padding: 8px; }
+.stats { margin-top: 12px; text-align: center; font-weight: 500; font-size: 10.5px; letter-spacing: 1.2px; color: var(--muted); line-height: 15px; }
+
+/* Kisa */
+.clockrow { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 10px; gap: 8px; }
+.clock { font-family: var(--f-slab); font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.kmlbl { text-align: right; font-weight: 600; font-size: 10px; letter-spacing: 2px; color: var(--muted); line-height: 13px; }
+.kmlbl b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 22px; letter-spacing: .5px; color: var(--ink); line-height: 24px; }
+.kelibar { margin-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-weight: 600; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 4px 0; }
+.kelibar em { font-style: normal; color: var(--red); }
+canvas { display: block; width: 100%; }
+#ov { margin-top: 8px; height: 58px; }
+#zoom { margin-top: 6px; height: 196px; border: 2px solid var(--ink); box-sizing: border-box; background: var(--snow); }
+.board { margin-top: 10px; display: flex; flex-direction: column; }
+.board .bh { display: grid; grid-template-columns: 22px 30px 1fr auto 62px 58px; gap: 8px; font-weight: 600; font-size: 8.5px; letter-spacing: 1.5px; color: var(--muted); padding-bottom: 3px; }
+.board .bh span:nth-child(5), .board .bh span:nth-child(6) { text-align: right; }
+.brow { display: grid; grid-template-columns: 22px 30px 1fr auto 62px 58px; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--rule); }
+.brow:nth-child(2) { border-top: 2px solid var(--ink); }
+.brow .p { font-family: var(--f-slab); font-size: 16px; text-align: center; }
+.brow .mi { width: 30px; height: 30px; border: 1.5px solid var(--ink); box-sizing: border-box; overflow: hidden; }
+.brow .mi img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.7); transform-origin: 47% 22%; }
+.brow .n { font-family: var(--f-display); font-size: 17px; letter-spacing: .5px; text-transform: uppercase; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brow .n.mine { color: var(--red); }
+.brow .st { font-weight: 600; font-size: 8.5px; letter-spacing: 1.2px; color: var(--muted); }
+.brow .st.alert { color: var(--red); }
+.brow .g { font-family: var(--f-slab); font-size: 13.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.brow .lo { justify-self: end; background: transparent; border: 1.5px solid var(--ink); font-family: var(--f-slab); font-size: 12.5px; padding: 3px 0 2px; width: 58px; font-variant-numeric: tabular-nums; }
+.brow .lo:disabled { border-color: var(--rule); color: var(--muted); }
+.brow .lo.dn { color: var(--red); }
+.feed { margin: 10px 0 0; padding: 0; list-style: none; min-height: 96px; }
+.feed li { display: grid; grid-template-columns: 40px 1fr; gap: 8px; font-size: 12.5px; line-height: 16px; padding: 3px 0; border-bottom: 1px dotted var(--rule-strong); }
+.feed li:first-child { font-weight: 600; }
+.feed li span { font-family: var(--f-slab); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.feed li.hot b { color: var(--red); font-weight: 600; }
+.speed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.speed button { background: transparent; border: 1.5px solid var(--ink); font-weight: 600; font-size: 12px; letter-spacing: 2px; padding: 8px 0; }
+.speed button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.livebtn { margin-top: 10px; width: 100%; background: var(--red); color: var(--on-ink); border: none; font-family: var(--f-display); font-size: 18px; letter-spacing: 1.5px; padding: 8px; }
+.livebtn[aria-expanded="true"] { background: var(--ink); }
+
+/* Tulos */
+.winner { display: grid; grid-template-columns: 132px 1fr; gap: 14px; margin-top: 12px; align-items: center; }
+.winner .ph { position: relative; aspect-ratio: 1; border: 2px solid var(--ink); background: var(--ink); max-width: 100%; }
+.winner .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.winner .ph .wst { position: absolute; left: -14px; top: -14px; width: 54px; height: 54px; border-radius: 50%; color: var(--red); background: var(--paper); border: 2px solid currentColor; box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px currentColor; display: flex; align-items: center; justify-content: center; font-family: var(--f-slab); font-size: 15px; transform: rotate(-10deg); }
+.winner .wn { font-family: var(--f-display); font-size: 36px; line-height: 38px; text-transform: uppercase; }
+.winner .wf { font-weight: 600; font-size: 9.5px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+.winner .wt { font-family: var(--f-slab); font-size: 22px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.winner .wv { font-size: 12.5px; line-height: 16px; margin-top: 6px; }
+.reskeli { margin-top: 10px; font-size: 12px; line-height: 16px; text-align: center; color: var(--muted); }
+table.res { width: 100%; border-collapse: collapse; margin-top: 10px; font-variant-numeric: tabular-nums; }
+table.res td { padding: 5px 2px; border-bottom: 1px solid var(--rule); font-size: 13px; vertical-align: middle; }
+table.res tr:first-child td { border-top: 2px solid var(--ink); }
+table.res td.p { font-family: var(--f-slab); width: 24px; text-align: center; }
+table.res td.n { font-family: var(--f-display); font-size: 16px; letter-spacing: .5px; text-transform: uppercase; }
+table.res td.w { font-weight: 600; font-size: 8.5px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+table.res td.t { font-family: var(--f-slab); text-align: right; }
+table.res td.gp { text-align: right; color: var(--muted); width: 58px; }
+.till { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+.till div { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; line-height: 16px; }
+.till div b { font-family: var(--f-slab); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.till .plus b { color: var(--red); }
+.till .sum { border-top: 2px solid var(--ink); padding-top: 5px; margin-top: 2px; font-weight: 600; letter-spacing: 1px; }
+.btnrow { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: auto; padding-top: 14px; }
+.copied { text-align: center; font-size: 12px; color: var(--red); min-height: 16px; }
+
+@media (max-width: 380px) {
+  h1 { font-size: 48px; }
+  .runner { grid-template-columns: 18px 48px 1fr 52px; gap: 7px; }
+  .mini { width: 48px; height: 48px; }
+  .odds { width: 52px; height: 52px; }
+  .who .nick { font-size: 19px; }
+  .brow, .board .bh { grid-template-columns: 18px 26px 1fr auto 52px 52px; gap: 6px; }
+  .brow .mi { width: 26px; height: 26px; }
+  .brow .lo { width: 52px; }
+  .winner { grid-template-columns: 110px 1fr; }
+  .winner .wn { font-size: 30px; line-height: 32px; }
+  .wx b { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .livedot { animation: none; } }
+</style>
+
+<main class="bill">
+  <div class="bill-inner">
+    <header class="topbar">
+      <span>VIERUMÄKI WEEKEND · ERÄ 4</span>
+      <span class="ctx"><span class="livedot" id="livedot" hidden></span><span id="ctx">LAUANTAI</span>
+        <button class="sound" id="sound" type="button" aria-pressed="true" aria-label="Ääni päällä">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4z"></path>
+            <path id="sound-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path>
+            <path id="sound-off" d="M17 9l5 6M22 9l-5 6" hidden></path>
+          </svg>
+        </button>
+      </span>
+    </header>
+
+    <!-- LÄHTÖ -->
+    <section class="view" id="v-start">
+      <div class="kicker">YHTEISLÄHTÖ · VAPAA TYYLI</div>
+      <h1>10 KM <span class="red">HIIHTO</span></h1>
+      <div class="seg" id="mode">
+        <button type="button" data-m="solo" aria-pressed="true">YKSIN</button>
+        <button type="button" data-m="poru" aria-pressed="false">PORUKALLA</button>
+      </div>
+      <div class="room" id="room" hidden>
+        <div id="room-new">
+          <div class="row"><input id="nimi" maxlength="16" placeholder="NIMESI" autocomplete="off" aria-label="Nimesi"></div>
+          <div class="row" style="margin-top:8px"><button class="btn ink" id="create" type="button" style="flex:1">LUO LÄHTÖ</button></div>
+          <div class="row" style="margin-top:8px"><input id="joincode" inputmode="numeric" maxlength="5" placeholder="KOODI" autocomplete="off" aria-label="Lähtökoodi"><button class="btn" id="join" type="button">LIITY</button></div>
+          <div class="hint" id="roomhint" style="margin-top:6px">Yksi luo lähdön ja jakaa koodin. Sama kisa pyörii kaikkien puhelimissa samaan aikaan, ja jokainen lyö vetonsa omalla puhelimellaan.</div>
+        </div>
+        <div id="room-in" hidden>
+          <div class="code"><div><div class="lbl">LÄHTÖKOODI</div><b id="rcode">00000</b></div><span id="rtime">LÄHTÖ KLO 00:00<em>0:00</em></span></div>
+          <div class="row"><button class="btn" id="invite" type="button" style="flex:1">KOPIOI KUTSU</button><button class="btn" id="leave" type="button">POISTU</button></div>
+          <div class="copied" id="invmsg"></div>
+        </div>
+      </div>
+
+      <div class="slab"><span>SÄÄENNUSTE</span></div>
+      <div class="wx" id="wx"></div>
+      <div class="wxline" id="wxline"></div>
+
+      <div class="slab"><span>LÄHTÖLISTA</span></div>
+      <div class="startlist" id="startlist"></div>
+
+      <div class="slab"><span>VETO</span></div>
+      <div id="mk-pre"></div>
+      <div class="slip" id="slip-pre"></div>
+
+      <button class="go" id="go" type="button">LÄHTÖLAUKAUS<small id="go-s">ILMAN VETOA</small></button>
+      <button class="go alt" id="refill" type="button" hidden>UUSI KASSA · 100 MK</button>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <!-- KISA -->
+    <section class="view" id="v-race" hidden>
+      <div class="clockrow">
+        <div class="clock" id="clock">00:00</div>
+        <div class="kmlbl">KÄRKI<b id="km">0,0 / 10 KM</b></div>
+      </div>
+      <div class="kelibar" id="kelibar"></div>
+      <canvas id="ov" aria-label="Latuprofiili ja hiihtäjien sijainnit"></canvas>
+      <canvas id="zoom" aria-label="Kärkiryhmä ladulla"></canvas>
+      <div class="board" id="board"></div>
+      <ul class="feed" id="feed" aria-live="polite"></ul>
+      <button class="livebtn" id="livebtn" type="button" aria-expanded="false">LYÖ LIVEVETO</button>
+      <div id="mk-live" hidden></div>
+      <div class="slip" id="slip-live"></div>
+      <div class="speed" id="speed">
+        <button type="button" data-sp="1" aria-pressed="true">1×</button>
+        <button type="button" data-sp="4" aria-pressed="false">4×</button>
+        <button type="button" data-sp="end" aria-pressed="false">LOPPUUN</button>
+      </div>
+    </section>
+
+    <!-- TULOS -->
+    <section class="view" id="v-res" hidden>
+      <div class="slab" style="margin-top:12px"><span>TULOKSET</span></div>
+      <div class="winner" id="winner"></div>
+      <table class="res" id="res"></table>
+      <div class="reskeli" id="reskeli"></div>
+      <div class="slab"><span>TILITYS</span></div>
+      <div class="till" id="till"></div>
+      <div class="btnrow">
+        <button class="go alt" id="share" type="button" hidden>KOPIOI TULOS</button>
+        <div class="copied" id="sharemsg"></div>
+        <button class="go" id="again" type="button">UUSI LÄHTÖ</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+// ENGINE START
+// Kisamalli v2: siemenellä toistettava (moninpelissä kaikki puhelimet ajavat saman kisan), sääennuste, keli, voitelu ja markkina.
+const COURSE = 10000, LAP = 5000, GRID = 20, NG = COURSE / GRID;
+function elev(x){ const p = 2*Math.PI*x/LAP; return 22*Math.sin(p) + 9*Math.sin(2*p+1.3) + 4*Math.sin(4*p+0.4); }
+function grade(x){ return (elev(x+5) - elev(x-5)) / 10; }
+function rngOf(seed){ let a = seed >>> 0; return function(){ a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function gaussR(R){ let u = 0; while (!u) u = R(); return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*R()); }
+
+const SKIERS = [
+  { id:'godzilla', nick:'Godzilla', name:'Kari Savolainen', bib:1, place:6, odds:51.00, T:3000, sd:0.17, up:1.35, down:1.7, fat:0.10, fall:0.035, heavy:true,
+    quip:'Ensiapupiste siirretty 5 km:n kohdalle.' },
+  { id:'staga', nick:'Staga', name:'Janne Toivonen', bib:2, place:5, odds:13.00, T:2680, sd:0.10, up:1.0, down:1.0, fat:0.05, fall:0.02,
+    quip:'Sijainti hyvä, palvelut lähellä. Maali valitettavasti ei.' },
+  { id:'jamo', nick:'Jamo', name:'Jarmo Laine', bib:3, place:2, odds:3.30, T:2465, sd:0.075, up:0.95, down:1.0, fat:0.03, fall:0.015, noShow:0.15,
+    quip:'Treenannut kelkka perässä. Ensi talvena kyydissä on kaksi.' },
+  { id:'pohje', nick:'Pohje', name:'Justus Pöysti', bib:4, place:1, odds:1.80, T:2420, sd:0.075, up:0.9, down:1.0, fat:0.03, fall:0.015,
+    quip:'Tuomaristo selvittää, lasketaanko pohkeet välineiksi.' },
+];
+const KELIT = [
+  { id:'pakkanen', name:'Kova pakkanen', temp:'−15 °C', v:1.04, sd:0.8, fall:0.7, up:1.0, down:1.0, heavy:1, group:'kova',
+    line:'Nopea ja kova latu. Kunto ratkaisee, yllätyksiä ei odoteta.' },
+  { id:'suoja', name:'Suojakeli', temp:'0 °C', v:0.94, sd:1.15, fall:1.8, up:1.05, down:0.9, heavy:1, group:'pehmea',
+    line:'Märkä lumi. Pito karkaa, ja voitelu ratkaisee enemmän kuin kunto.' },
+  { id:'uusi', name:'Uusi lumi', temp:'−4 °C', v:0.9, sd:1.0, fall:1.0, up:1.3, down:0.6, heavy:0.96, group:'pehmea',
+    line:'Pehmeä ja hidas latu. Ylämäet painavat, raskain maksaa eniten.' },
+  { id:'jaa', name:'Jäinen latu', temp:'−8 °C', v:1.03, sd:1.0, fall:1.9, up:1.0, down:1.4, heavy:1, group:'kova',
+    line:'Alamäet ovat nopeita ja mutkat kovia. Massa vie, mutka palauttaa.' },
+];
+const PROP = { text:'Godzilla kysyy hiihdon puolivälissä, missä hissi on.', odds:1.30, p:0.72 };
+const NOISE_SD = 0.045, NOISE_RHO = 0.985, DRAFT = 0.04, TURN_P = 0.18, WAX_HIT = 1.03, WAX_NEAR = 0.99, WAX_MISS = 0.97;
+const ST = ['', 'PEESAA', 'NOUSU', 'LASKU', 'KAATUI', 'HISSI?', 'TARKASTUS', 'HUOLTO', 'MAALISSA'];
+const WAXQ = 0.012; // voitelun piilolaatu (log-nopeus)
+
+function waxF(waxK, k){ return waxK === k ? WAX_HIT : KELIT[waxK].group === KELIT[k].group ? WAX_NEAR : WAX_MISS; }
+
+// Perusaika ruudukolle per hiihtäjä ja keli: sekunteja kertoimella 1 (ilman vireä, voitelua, kohinaa ja peesausta)
+const CUM = SKIERS.map(s => KELIT.map(K => {
+  const c = new Float64Array(NG + 1);
+  for (let j = 0; j < NG; j++) {
+    const x = (j + .5) * GRID, g = grade(x);
+    const terr = g > 0 ? 1 - 7*g*s.up*K.up : 1 + 4*(-g)*s.down*K.down;
+    const fat = 1 - s.fat*Math.pow(x/COURSE, 2);
+    const v = (COURSE/s.T) * K.v * (s.heavy ? K.heavy : 1) * terr * fat;
+    c[j + 1] = c[j] + GRID / v;
+  }
+  return c;
+}));
+function cumAt(i, k, x){ const f = Math.min(NG, Math.max(0, x / GRID)), j = Math.min(NG - 1, Math.floor(f)); const c = CUM[i][k]; return c[j] + (c[j+1] - c[j]) * (f - j); }
+
+function makeForecast(R){
+  const g = KELIT.map(() => { let s = 0; for (let i = 0; i < 2; i++) s -= Math.log(R() || 1e-9); return s; }); // gamma(2)
+  const tot = g.reduce((a, b) => a + b, 0);
+  let p = g.map(v => Math.max(5, Math.round(v / tot * 20) * 5));
+  let d = 100 - p.reduce((a, b) => a + b, 0);
+  while (d !== 0) { const i = d > 0 ? p.indexOf(Math.max(...p)) : p.indexOf(Math.max(...p)); p[i] += d > 0 ? 5 : -5; d += d > 0 ? -5 : 5; }
+  return p; // prosentteina, summa 100
+}
+function pickFrom(R, p, skip){ const w = p.map((v, i) => i === skip ? 0 : v), t = w.reduce((a, b) => a + b, 0); let r = R() * t; for (let i = 0; i < w.length; i++) { r -= w[i]; if (r < 0) return i; } return w.findIndex(v => v > 0); }
+
+function newRace(seed){
+  const R = rngOf(seed);
+  const forecast = makeForecast(R);
+  const top = forecast.indexOf(Math.max(...forecast));
+  const r = { seed, forecast, sk: [], events: [] };
+  r.sk = SKIERS.map((s, i) => {
+    const wax = R() < 0.72 ? top : pickFrom(R, forecast, -1);
+    return { i, s, wax, q: gaussR(R) * WAXQ, z: gaussR(R), e: gaussR(R), absent: !!(s.noShow && R() < s.noShow) };
+  });
+  r.keli = pickFrom(R, forecast, -1);
+  r.turn = R() < TURN_P ? pickFrom(R, forecast, r.keli) : -1;
+  r.hissi = R() < PROP.p; r.hissiAt = 4700 + R()*600;
+  r.pohjeCheck = R() < 0.12 ? 1500 + R()*6000 : -1;
+  r.stagaHuolto = R() < 0.4 ? 6500 + R()*2000 : -1;
+  r.starters = r.sk.filter(k => !k.absent).map(k => k.i);
+  for (const k of r.sk) { const K = KELIT[r.keli]; k.lf = k.z * k.s.sd * K.sd + k.q; }
+  simulate(r, R);
+  return r;
+}
+function keliAt(r, t){ return r.turn >= 0 && r.turnT != null && t >= r.turnT ? r.turn : r.keli; }
+
+function simulate(r, R){
+  const n = SKIERS.length, act = r.starters;
+  const x = new Float64Array(n), stop = new Int16Array(n), noise = new Float64Array(n), ft = new Array(n).fill(null);
+  const stopCode = new Uint8Array(n), st = new Uint8Array(n);
+  const XS = [], STOPS = [], STS = [];
+  let t = 0, finished = 0, hissiDone = false, leader = -1;
+  const ev = (type, i, extra) => r.events.push(Object.assign({ t, type, i }, extra || {}));
+  const push = () => { XS.push(Float32Array.from(x)); STOPS.push(Int16Array.from(stop)); STS.push(Uint8Array.from(st)); };
+  const splitDone = {};
+  act.forEach(i => noise[i] = gaussR(R) * NOISE_SD);
+  push();
+  while (finished < act.length && t < 9000) {
+    t++;
+    const kNow = keliAt(r, t), K = KELIT[kNow];
+    for (const i of act) {
+      if (ft[i] !== null) continue;
+      const k = r.sk[i], s = k.s;
+      noise[i] = NOISE_RHO*noise[i] + NOISE_SD*Math.sqrt(1 - NOISE_RHO*NOISE_RHO)*gaussR(R);
+      if (stop[i] > 0) { stop[i]--; st[i] = stopCode[i]; continue; }
+      const g = grade(x[i]);
+      const terr = g > 0 ? 1 - 7*g*s.up*K.up : 1 + 4*(-g)*s.down*K.down;
+      const fat = 1 - s.fat*Math.pow(x[i]/COURSE, 2);
+      const draft = act.some(o => o !== i && ft[o] === null && stop[o] === 0 && x[o] - x[i] > 3 && x[o] - x[i] < 20);
+      const v = (COURSE/s.T) * K.v * (s.heavy ? K.heavy : 1) * Math.exp(k.z * s.sd * K.sd + k.q) * waxF(k.wax, kNow) * terr * fat * (1 + noise[i]) * (draft ? 1 + DRAFT : 1);
+      const x0 = x[i]; x[i] += v;
+      st[i] = draft ? 1 : g > 0.03 ? 2 : g < -0.03 ? 3 : 0;
+      const fallRate = s.fall * K.fall * (g < -0.03 && s.down > 1.2 ? 2.2 : 1);
+      if (R() < fallRate * v / 1000) { stop[i] = 6 + Math.floor(R()*14); stopCode[i] = 4; st[i] = 4; ev('fall', i); }
+      if (s.id === 'godzilla' && r.hissi && !hissiDone && x0 < r.hissiAt && x[i] >= r.hissiAt) { hissiDone = true; stop[i] = 22; stopCode[i] = 5; st[i] = 5; ev('hissi', i); }
+      if (s.id === 'godzilla' && x0 < 5000 && x[i] >= 5000) ev('ensiapu', i);
+      if (s.id === 'pohje' && r.pohjeCheck > 0 && x0 < r.pohjeCheck && x[i] >= r.pohjeCheck) { stop[i] = 5; stopCode[i] = 6; st[i] = 6; ev('pohje', i); }
+      if (s.id === 'staga' && r.stagaHuolto > 0 && x0 < r.stagaHuolto && x[i] >= r.stagaHuolto) { stop[i] = 7; stopCode[i] = 7; st[i] = 7; ev('huolto', i); }
+      if (x0 < 1200 && x[i] >= 1200) ev('wax', i, { hit: waxF(k.wax, kNow) });
+      if (x[i] >= COURSE) { ft[i] = t - 1 + (COURSE - x0) / v; x[i] = COURSE; st[i] = 8; finished++; ev('finish', i, { pos: finished, ft: ft[i] }); }
+    }
+    // sää kääntyy, kun kärki ohittaa 5 km
+    if (r.turn >= 0 && r.turnT == null && act.some(i => x[i] >= 5000)) { r.turnT = t + 1; ev('turn', -1, { from: r.keli, to: r.turn }); }
+    for (const m of [2500, 5000, 7500]) if (!splitDone[m] && act.every(i => x[i] >= m)) { splitDone[m] = 1; ev('split', -1, { m }); }
+    const o = act.slice().sort((a, b) => ft[a] !== null && ft[b] !== null ? ft[a] - ft[b] : ft[a] !== null ? -1 : ft[b] !== null ? 1 : x[b] - x[a]);
+    if (leader >= 0 && o[0] !== leader && t > 30 && ft[o[0]] === null) ev('lead', o[0]);
+    leader = o[0];
+    push();
+  }
+  r.XS = XS; r.STOPS = STOPS; r.STS = STS; r.ft = ft; r.hissiDone = hissiDone; r.T = t;
+  r.order = r.starters.slice().sort((a, b) => ft[a] - ft[b]);
+}
+function frameAt(r, t){ const j = Math.max(0, Math.min(r.XS.length - 1, Math.floor(t))); return j; }
+function orderAt(r, t){
+  const j = frameAt(r, t), X = r.XS[j];
+  return r.starters.slice().sort((a, b) => {
+    const fa = r.ft[a] !== null && r.ft[a] <= t, fb = r.ft[b] !== null && r.ft[b] <= t;
+    if (fa && fb) return r.ft[a] - r.ft[b]; if (fa) return -1; if (fb) return 1; return X[b] - X[a];
+  });
+}
+
+// ---------- markkina: Monte Carlo nykytilasta ----------
+// t < 0: ennen lähtöä (keli ja poissaolo tuntemattomia). Markkina ei näe vireitä; se oppii niitä vauhdista (lambda).
+function market(r, t, N){
+  N = N || 1500;
+  const pre = t < 0, tt = Math.max(0, t);
+  const R = rngOf((r.seed * 7919 + (pre ? 99991 : Math.floor(tt))) >>> 0);
+  const n = SKIERS.length, j = frameAt(r, tt), X = r.XS[j], STOP = r.STOPS[j];
+  const lam = pre ? 0 : tt / (tt + 400);
+  const win = new Float64Array(n), top2 = new Float64Array(n), ex = new Float64Array(n*n), beat = new Float64Array(n*n), both = new Float64Array(n*n);
+  let u60 = 0, u60n = 0;
+  const kNow = pre ? -1 : keliAt(r, tt), turned = !pre && r.turnT != null && tt >= r.turnT;
+  const leadX = pre ? 0 : Math.max(...r.starters.map(i => X[i]));
+  const T = new Float64Array(n);
+  for (let s = 0; s < N; s++) {
+    let k1 = kNow, k2 = -1;
+    if (pre) { k1 = pickFrom(R, r.forecast, -1); if (R() < TURN_P) k2 = pickFrom(R, r.forecast, k1); }
+    else if (!turned && leadX < 5000 && R() < TURN_P) k2 = pickFrom(R, r.forecast, k1);
+    const turnX = 5000; // likiarvo: vaihto omalla 5 km:n kohdalla
+    for (let i = 0; i < n; i++) {
+      const k = r.sk[i], sk = k.s;
+      if (pre ? (sk.noShow && R() < sk.noShow) : k.absent) { T[i] = Infinity; continue; }
+      if (!pre && r.ft[i] !== null && r.ft[i] <= tt) { T[i] = r.ft[i]; continue; }
+      const sd0 = Math.sqrt(Math.pow(sk.sd * KELIT[k1].sd, 2) + WAXQ*WAXQ);
+      const est = lam * k.lf + Math.sqrt(lam * (1 - lam)) * sd0 * k.e;
+      const lf = est + gaussR(R) * sd0 * Math.sqrt(1 - lam);
+      const F = Math.exp(lf);
+      const x = pre ? 0 : X[i];
+      let rem;
+      if (k2 >= 0 && x < turnX) rem = (cumAt(i, k1, turnX) - cumAt(i, k1, x)) / (F * waxF(k.wax, k1)) + (cumAt(i, k2, COURSE) - cumAt(i, k2, turnX)) / (F * waxF(k.wax, k2));
+      else { const kk = k2 >= 0 ? k2 : k1; rem = (cumAt(i, kk, COURSE) - cumAt(i, kk, x)) / (F * waxF(k.wax, kk)); }
+      let extra = (pre ? 0 : STOP[i]) + gaussR(R) * Math.sqrt(rem * 0.27);
+      const kmLeft = (COURSE - x) / 1000, fr = sk.fall * KELIT[k2 >= 0 ? k2 : k1].fall * (sk.down > 1.2 ? 1.5 : 1);
+      for (let q = 0; q < kmLeft; q++) if (R() < fr * Math.min(1, kmLeft - q)) extra += 6 + R() * 14;
+      if (sk.id === 'godzilla' && x < 4700 && R() < PROP.p) extra += 22;
+      rem *= 1 - DRAFT * 0.35; // keskimääräinen peesaushyöty
+      T[i] = (pre ? 0 : tt) + rem + extra;
+    }
+    let a = -1, b = -1;
+    for (let i = 0; i < n; i++) { if (T[i] === Infinity) continue; if (a < 0 || T[i] < T[a]) { b = a; a = i; } else if (b < 0 || T[i] < T[b]) b = i; }
+    if (a >= 0) { win[a]++; top2[a]++; } if (b >= 0) { top2[b]++; ex[a*n + b]++; }
+    for (let i = 0; i < n; i++) for (let m = 0; m < n; m++) if (i !== m && T[i] !== Infinity && T[m] !== Infinity) { both[i*n+m]++; if (T[i] < T[m]) beat[i*n+m]++; }
+    if (T[0] !== Infinity) { u60n++; if (T[0] < 3600) u60++; }
+  }
+  const P = { win: [], top2: [], ex: [], pair: [], u60: u60n ? u60 / u60n : 0, t };
+  for (let i = 0; i < n; i++) { P.win[i] = win[i] / N; P.top2[i] = top2[i] / N; }
+  for (let i = 0; i < n*n; i++) { P.ex[i] = ex[i] / N; P.pair[i] = both[i] ? beat[i] / both[i] : 0; }
+  return P;
+}
+function toOdds(p, margin){
+  if (!(p > 0.0005)) return null;
+  let o = (margin || 0.92) / p;
+  const q = o < 4 ? 0.05 : o < 10 ? 0.1 : o < 30 ? 0.5 : 1;
+  o = Math.round(o / q) * q;
+  return Math.min(250, Math.max(1.02, o));
+}
+
+
+// ---------- apurit ----------
+const $ = id => document.getElementById(id);
+const FI = {
+  godzilla: { gen:'Godzillan', part:'Godzillaa', all:'Godzillalle', ade:'Godzillalla' },
+  staga:    { gen:'Stagan',    part:'Stagaa',    all:'Stagalle',    ade:'Stagalla' },
+  jamo:     { gen:'Jamon',     part:'Jamoa',     all:'Jamolle',     ade:'Jamolla' },
+  pohje:    { gen:'Pohjeen',   part:'Pohjetta',  all:'Pohjeelle',   ade:'Pohjeella' },
+};
+const KFI = { pakkanen:'pakkaselle', suoja:'suojakelille', uusi:'uudelle lumelle', jaa:'jäiselle ladulle' };
+const nk = i => SKIERS[i].nick;
+const fi = (i, c) => FI[SKIERS[i].id][c];
+const STAKES = [5, 10, 25, 50];
+const PAIRS = [[1, 0], [3, 2], [1, 2]];
+const SCALE = 34;           // kisasekuntia / s 1×-nopeudella (voittaja ~80 s)
+const CLOSE_X = 8000;       // livevedot suljetaan, kun kärki ohittaa 8 km
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const fmt = t => { t = Math.max(0, t); const m = Math.floor(t / 60), s = Math.floor(t % 60); return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); };
+const fmtGap = g => { g = Math.max(0, Math.round(g)); return '+' + Math.floor(g / 60) + ':' + String(g % 60).padStart(2, '0'); };
+const kmTxt = x => (x / 1000).toFixed(1).replace('.', ',');
+const odd = o => o == null ? '–' : o.toFixed(2);
+const hhmm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+
+// ---------- tila ----------
+let kassa = store.get('vw-ski-kassa', 100);
+let stats = store.get('vw-ski-stats', { n:0, w:{} });
+let stake = store.get('vw-ski-stake', 10);
+let mode = 'solo';
+let room = null;            // { code, startTs }
+let race = null, raceKey = null, phase = 'lobby';
+let bets = [];              // tämän kisan vedot
+let sel = null;             // { type, a, b }
+let tab = 'win';
+let simT = 0, speed = 1, soloStart = null, evIdx = 0, camX = 0, lastBoard = 0, settled = false, beeped = false;
+const mkCache = {};
+const imgs = {};
+SKIERS.forEach(s => ['hiihto', 'kaatui'].forEach(v => { const im = new Image(); im.src = `img/${s.id}-${v}.jpg`; imgs[s.id + v] = im; }));
+
+// ---------- ääni ----------
+let soundOn = store.get('vw-ski-sound', true), AC = null;
+function ac(){
+  if (!AC) { try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f, d, when, vol){
+  const a = ac(); if (!a || !soundOn) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + (when || 0);
+  o.type = 'square'; o.frequency.value = f;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol || .1, t + .01);
+  g.gain.setValueAtTime(vol || .1, t + d - .03); g.gain.linearRampToValueAtTime(0, t + d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + .02);
+}
+function bell(big){
+  const a = ac(); if (!a || !soundOn) return;
+  [[1320, .22], [2640, .08], [1980, .06]].forEach(([f, v]) => {
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime, d = big ? 1.6 : .7;
+    o.type = 'sine'; o.frequency.value = f * (big ? 1 : 1.5);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0005, t + d);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + d);
+  });
+}
+function startBeeps(lead){ const b = Math.max(0, lead - 1.8); [0, .6, 1.2].forEach(t => tone(880, .14, b + t, .09)); tone(1320, .55, b + 1.8, .11); }
+function renderSound(){
+  $('sound').setAttribute('aria-pressed', soundOn); $('sound').setAttribute('aria-label', soundOn ? 'Ääni päällä' : 'Ääni pois');
+  $('sound-on').hidden = !soundOn; $('sound-off').hidden = soundOn;
+}
+$('sound').onclick = () => { soundOn = !soundOn; store.set('vw-ski-sound', soundOn); renderSound(); if (soundOn) ac(); };
+document.addEventListener('pointerdown', () => { if (soundOn) ac(); }, { once:true });
+
+// ---------- kisan valmistelu ----------
+function prepRace(seed, key){
+  race = newRace(seed); raceKey = key;
+  for (const k in mkCache) delete mkCache[k];
+  bets = []; sel = null; tab = 'win'; settled = false; evIdx = 0; beeped = false; simT = 0; camX = 0;
+}
+function mk(t){
+  const key = t < 0 ? 'pre' : String(Math.floor(t / 60) * 60);
+  if (!mkCache[key]) mkCache[key] = market(race, t < 0 ? -1 : Math.floor(t / 60) * 60, t < 0 ? 4000 : 1500);
+  return mkCache[key];
+}
+function newSolo(){ prepRace((Math.random() * 4294967295) >>> 0, 'solo'); soloStart = null; }
+
+// ---------- moninpeli ----------
+function roomFromCode(code){
+  if (!/^\d{5}$/.test(code)) return null;
+  const s = +code.slice(0, 3), mm = +code.slice(3);
+  if (s < 100 || mm > 59) return null;
+  const now = new Date(), d = new Date(now); d.setMinutes(mm, 0, 0);
+  let ts = d.getTime();
+  if (ts < now.getTime() - 40 * 60000) ts += 3600000;
+  if (ts > now.getTime() + 20 * 60000) ts -= 3600000;
+  const day = new Date(ts); const seed = ((s * 100 + mm) * 1000 + day.getDate() * 24 + day.getHours()) >>> 0;
+  return { code, startTs: ts, seed };
+}
+function createRoom(){
+  const now = Date.now(), d = new Date(now + 75000); d.setSeconds(0, 0); if (d.getTime() - now < 60000) d.setMinutes(d.getMinutes() + 1);
+  const s = 100 + Math.floor(Math.random() * 900);
+  return roomFromCode(String(s) + String(d.getMinutes()).padStart(2, '0'));
+}
+function enterRoom(r){
+  refundPre();
+  room = r; mode = 'poru';
+  prepRace(r.seed, 'room' + r.code);
+  try { history.replaceState(null, '', '#l' + r.code); } catch (e) {}
+  renderStart();
+}
+function leaveRoom(){
+  refundPre();
+  room = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  newSolo(); renderStart();
+}
+$('create').onclick = () => { saveName(); enterRoom(createRoom()); };
+$('join').onclick = () => {
+  saveName();
+  const r = roomFromCode($('joincode').value.trim());
+  if (!r) { $('roomhint').textContent = 'Koodissa on viisi numeroa. Tarkista koodi kutsusta.'; return; }
+  if (Date.now() > r.startTs + 6 * 60000) { $('roomhint').textContent = 'Tämä lähtö on jo ohi. Pyydä uusi koodi.'; return; }
+  enterRoom(r);
+};
+$('leave').onclick = leaveRoom;
+$('invite').onclick = () => {
+  const url = /github\.io$/.test(location.hostname) ? ` ${location.origin}${location.pathname}#l${room.code}` : '';
+  const txt = `Vierumäki Hiihto: lähtö klo ${hhmm(new Date(room.startTs))}, koodi ${room.code}.${url}`;
+  copy(txt, $('invmsg'));
+};
+function saveName(){ store.set('vw-ski-name', $('nimi').value.trim()); }
+function copy(txt, el){
+  const ok = () => { el.textContent = 'Kopioitu.'; setTimeout(() => el.textContent = '', 2500); };
+  const fail = () => { el.textContent = txt; };
+  try { navigator.clipboard.writeText(txt).then(ok, fail); } catch (e) { fail(); }
+}
+$('mode').querySelectorAll('button').forEach(b => b.onclick = () => {
+  if (b.dataset.m === mode) return;
+  refundPre();
+  if (b.dataset.m === 'solo') { if (room) leaveRoom(); mode = 'solo'; }
+  else { mode = 'poru'; }
+  renderStart();
+});
+
+// ---------- vedot ----------
+function oddsFor(o, P){
+  if (o.type === 'hissi') return PROP.odds;
+  if (o.type === 'win') return toOdds(P.win[o.a]);
+  if (o.type === 'top2') return toOdds(P.top2[o.a], .9);
+  if (o.type === 'ex') return toOdds(P.ex[o.a * 4 + o.b], .86);
+  if (o.type === 'pair') return toOdds(P.pair[o.a * 4 + o.b], .92);
+  if (o.type === 'u60') return toOdds(P.u60, .92);
+  return null;
+}
+function betLabel(o){
+  if (o.type === 'win') return `${nk(o.a)} voittaa`;
+  if (o.type === 'top2') return `${nk(o.a)} kahden parhaan joukossa`;
+  if (o.type === 'ex') return `Kaksari ${nk(o.a)}–${nk(o.b)}`;
+  if (o.type === 'pair') return `${nk(o.a)} ennen ${fi(o.b, 'part')}`;
+  if (o.type === 'u60') return 'Godzilla alittaa tunnin';
+  if (o.type === 'hissi') return 'Pelivinkki: hissi';
+  return '';
+}
+const leaderX = t => { const j = Math.max(0, Math.min(race.XS.length - 1, Math.floor(t))); return Math.max(...race.starters.map(i => race.XS[j][i])); };
+const doneBy = (i, t) => race.ft[i] !== null && race.ft[i] <= t;
+function isOpen(o, live){
+  if (!live) return true;
+  const t = simT, X = race.XS[Math.max(0, Math.min(race.XS.length - 1, Math.floor(t)))];
+  if (leaderX(t) >= CLOSE_X || race.starters.some(i => doneBy(i, t))) return false;
+  if (o.type === 'hissi') return X[0] < 4500 && !race.events.some(e => e.type === 'hissi' && e.t <= t);
+  if (o.a != null && race.sk[o.a].absent) return false;
+  if (o.b != null && race.sk[o.b].absent) return false;
+  if (o.type === 'u60') return t < 3300;
+  return true;
+}
+function liveNow(){ return phase === 'race'; }
+function currentP(){ return liveNow() ? mk(simT) : mk(-1); }
+function marketOpen(){ return !liveNow() || (leaderX(simT) < CLOSE_X && !race.starters.some(i => doneBy(i, simT))); }
+
+function renderMarket(el, live){
+  if (live && !marketOpen()) { el.innerHTML = `<div class="closed">VEDOT SULJETTU · KÄRKI OHITTI 8 KM</div>`; return; }
+  const P = currentP(), prev = live ? mkCache[String(Math.floor(simT / 60) * 60 - 60)] : null;
+  const tabs = [['win', 'VOITTAJA'], ['top2', 'SIJA 1–2'], ['ex', 'KAKSARI'], ['pair', 'KAKSINKAMPPAILU'], ['spec', 'ERIKOISET']];
+  const opt = (o, label) => {
+    const k = oddsFor(o, P), on = sel && sel.type === o.type && sel.a === o.a && sel.b === o.b;
+    const open = k != null && isOpen(o, live);
+    let arrow = '';
+    if (prev && o.type === 'win') { const k0 = oddsFor(o, prev); if (k0 && k && k < k0 - .001) arrow = ' ↓'; else if (k0 && k && k > k0 + .001) arrow = ' ↑'; }
+    return `<button class="opt" type="button" data-o='${JSON.stringify(o)}' aria-pressed="${on}" ${open ? '' : 'disabled'}><span>${label}</span><b>${open ? odd(k) + arrow : '–'}</b></button>`;
+  };
+  let body = '';
+  if (tab === 'win' || tab === 'top2') body = `<div class="opts">${SKIERS.map((s, i) => opt({ type: tab, a: i }, s.nick)).join('')}</div>`;
+  else if (tab === 'ex') {
+    const L = []; for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) if (a !== b) L.push({ type:'ex', a, b, k: oddsFor({ type:'ex', a, b }, P) || 999 });
+    L.sort((x, y) => x.k - y.k);
+    body = `<div class="opts">${L.map(o => opt({ type:'ex', a:o.a, b:o.b }, `${nk(o.a)}–${nk(o.b)}`)).join('')}</div>`;
+  } else if (tab === 'pair') body = `<div class="opts one">${PAIRS.map(([a, b]) => `<div class="pair">${opt({ type:'pair', a, b }, nk(a))}<span class="vs">VS</span>${opt({ type:'pair', a:b, b:a }, nk(b))}</div>`).join('')}</div>`;
+  else body = `<div class="opts one">${opt({ type:'hissi' }, PROP.text)}${opt({ type:'u60' }, 'Godzilla alittaa tunnin (60:00)')}</div>`;
+  const k = sel ? oddsFor(sel, P) : null, can = sel && k != null && isOpen(sel, live) && stake <= kassa;
+  el.innerHTML = `<div class="mk">
+    <div class="tabs">${tabs.map(([t, l]) => `<button type="button" data-t="${t}" aria-pressed="${tab === t}">${l}</button>`).join('')}</div>
+    ${body}
+    <div class="mkfoot">${STAKES.map(v => `<button class="chip" type="button" data-v="${v}" aria-pressed="${stake === v}" ${v > kassa ? 'disabled' : ''}>${v} MK</button>`).join('')}</div>
+    <button class="place" type="button" ${can ? '' : 'disabled'}>${sel ? (k != null ? `LYÖ ${stake} MK @ ${odd(k)}` : 'KOHDE SULJETTU') : 'VALITSE KOHDE'}</button>
+    <div class="kassa"><span class="lbl">KASSA · PELIMARKAT</span><span class="amt">${kassa} MK</span></div>
+    <div class="mkmsg">${sel && stake > kassa ? `Kassassa ${kassa} mk.` : ''}</div>
+  </div>`;
+  el.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; sel = null; renderMarket(el, live); if (!live) renderList(); });
+  el.querySelectorAll('.opt').forEach(b => b.onclick = () => { const o = JSON.parse(b.dataset.o); sel = sel && sel.type === o.type && sel.a === o.a && sel.b === o.b ? null : o; renderMarket(el, live); if (!live) renderList(); });
+  el.querySelectorAll('.chip').forEach(b => b.onclick = () => { stake = +b.dataset.v; store.set('vw-ski-stake', stake); renderMarket(el, live); });
+  el.querySelector('.place').onclick = () => placeBet(live);
+}
+function placeBet(live){
+  const P = currentP(), k = oddsFor(sel, P);
+  if (!sel || k == null || stake > kassa || !isOpen(sel, live)) return;
+  kassa -= stake; store.set('vw-ski-kassa', kassa);
+  bets.push(Object.assign({}, sel, { odds: k, stake, live, t: live ? simT : -1 }));
+  sel = null; tone(1568, .06, 0, .05);
+  if (live) { renderMarket($('mk-live'), true); renderSlip($('slip-live'), false); }
+  else { renderMarket($('mk-pre'), false); renderSlip($('slip-pre'), true); renderList(); renderGo(); }
+}
+function renderSlip(el, removable){
+  if (!bets.length) { el.innerHTML = ''; return; }
+  const tot = bets.reduce((a, b) => a + b.stake, 0);
+  el.innerHTML = `<div class="h"><span>KUPONKI</span><span>PANOKSET ${tot} MK</span></div>` + bets.map((b, i) => `
+    <div class="bet"><span>${betLabel(b)}${b.live ? `<span class="live">LIVE ${fmt(b.t)}</span>` : ''}</span><span class="k">${b.stake} MK @ ${odd(b.odds)}</span>
+    ${removable ? `<button class="x" type="button" data-i="${i}" aria-label="Poista veto">×</button>` : '<span></span>'}</div>`).join('');
+  el.querySelectorAll('.x').forEach(b => b.onclick = () => { const v = bets.splice(+b.dataset.i, 1)[0]; kassa += v.stake; store.set('vw-ski-kassa', kassa); renderStart(); });
+}
+function refundPre(){ bets.forEach(b => kassa += b.stake); bets = []; store.set('vw-ski-kassa', kassa); }
+
+// ---------- lähtönäkymä ----------
+function renderStart(){
+  $('mode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === mode)));
+  $('room').hidden = mode !== 'poru';
+  $('room-new').hidden = !!room; $('room-in').hidden = !room;
+  $('nimi').value = store.get('vw-ski-name', '');
+  if (room) $('rcode').textContent = room.code;
+  const showRace = mode === 'solo' || room;
+  ['wx', 'wxline', 'startlist', 'mk-pre', 'slip-pre', 'go'].forEach(id => $(id).hidden = !showRace);
+  document.querySelectorAll('#v-start .slab').forEach(s => s.hidden = !showRace);
+  if (!showRace) { $('stats').innerHTML = ''; $('refill').hidden = kassa >= STAKES[0]; return; }
+  const top = race.forecast.indexOf(Math.max(...race.forecast));
+  $('wx').innerHTML = KELIT.map((K, i) => `<div><b>${race.forecast[i]} %</b><i>${K.name}</i><small>${K.temp}</small><span class="bar" style="width:${race.forecast[i]}%"></span></div>`).join('');
+  $('wxline').textContent = `Todennäköisin ${KELIT[top].name.toLowerCase()}: ${KELIT[top].line} Keli arvotaan ennusteesta lähtölaukauksella, ja sää voi kääntyä 5 km:n kohdalla.`;
+  renderList();
+  renderMarket($('mk-pre'), false);
+  renderSlip($('slip-pre'), true);
+  renderGo();
+  const w = SKIERS.map(s => `${s.nick} ${stats.w[s.id] || 0}`).join(' · ');
+  $('stats').innerHTML = stats.n ? `TÄLLÄ LAITTEELLA ${stats.n} LÄHTÖÄ<br>VOITOT: ${w.toUpperCase()}` : '';
+}
+function renderList(){
+  const P = mk(-1);
+  $('startlist').innerHTML = SKIERS.map((s, i) => {
+    const k = toOdds(P.win[i]), on = sel && sel.type === 'win' && sel.a === i;
+    const fav = P.win[i] === Math.max(...P.win);
+    const wk = KELIT[race.sk[i].wax];
+    return `<button class="runner" type="button" data-i="${i}" aria-pressed="${on}">
+      ${bets.some(b => b.type === 'win' && b.a === i) ? `<span class="vtag">VETO</span>` : ''}
+      <span class="bib">${s.bib}</span>
+      <span class="mini"><img src="img/${s.id}-hiihto.jpg" alt=""></span>
+      <span class="who"><div class="nick">${s.nick}</div><div class="nm">${s.name}</div><div class="q">${s.quip}</div>
+        <div class="wax">VOITELU: <em>${wk.name}</em> · AVAUS ${odd(s.odds)}</div></span>
+      <span class="odds ${fav ? 'red' : ''}"><i>TÄNÄÄN</i><b>${odd(k)}</b></span>
+    </button>`;
+  }).join('');
+  $('startlist').querySelectorAll('.runner').forEach(b => b.onclick = () => {
+    const i = +b.dataset.i; tab = 'win';
+    sel = sel && sel.type === 'win' && sel.a === i ? null : { type:'win', a:i };
+    renderList(); renderMarket($('mk-pre'), false);
+  });
+}
+let goKey = '';
+function renderGo(){
+  const tot = bets.reduce((a, b) => a + b.stake, 0);
+  if (mode === 'poru' && room) {
+    const left = Math.max(0, Math.ceil((room.startTs - Date.now()) / 1000));
+    const key = left + '|' + tot + '|' + kassa;
+    if (key === goKey) return; goKey = key;
+    $('go').disabled = true;
+    $('go').innerHTML = `LÄHTÖ ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}<small>${tot ? `KUPONGISSA ${tot} MK` : 'LYÖ VETOSI ENNEN LÄHTÖÄ'}</small>`;
+    $('rtime').innerHTML = `LÄHTÖ KLO ${hhmm(new Date(room.startTs))}<em>${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</em>`;
+  } else {
+    goKey = '';
+    $('go').disabled = false;
+    $('go').innerHTML = `LÄHTÖLAUKAUS<small>${tot ? `KUPONGISSA ${bets.length} ${bets.length === 1 ? 'VETO' : 'VETOA'} · ${tot} MK` : 'ILMAN VETOA'}</small>`;
+  }
+  $('refill').hidden = kassa >= STAKES[0] || bets.length > 0;
+}
+$('refill').onclick = () => { kassa = 100; store.set('vw-ski-kassa', kassa); renderStart(); };
+$('go').onclick = () => { if (mode === 'solo') { ac(); soloStart = performance.now() / 1000 + 1.9; startBeeps(1.9); beginRace(); } };
+
+// ---------- kisa ----------
+function show(v){ ['start', 'race', 'res'].forEach(n => $('v-' + n).hidden = n !== v); window.scrollTo(0, 0); }
+function setCtx(t, live){ $('ctx').textContent = t; $('livedot').hidden = !live; }
+let wakeLock = null;
+function beginRace(){
+  phase = 'race'; sel = null; tab = 'win'; speed = 1; settled = false;
+  $('feed').innerHTML = ''; $('mk-live').hidden = true; $('livebtn').setAttribute('aria-expanded', 'false');
+  $('speed').hidden = mode !== 'solo';
+  setSpeedBtns(); show('race'); setCtx('LIVE', true); sizeCanvases();
+  try { navigator.wakeLock && navigator.wakeLock.request('screen').then(l => wakeLock = l, () => {}); } catch (e) {}
+  const K = KELIT[race.keli];
+  say(`<b>Lähtölaukaus.</b> Keli: ${K.name.toLowerCase()}, ${K.temp}. ${race.starters.length === 4 ? 'Neljä' : 'Kolme'} hiihtäjää.`, 0, true);
+  race.sk.filter(k => k.absent).forEach(k => say(`<b>${k.s.nick} ei saapunut lähtöön.</b> ${fi(k.i, 'gen')} vedot palautetaan.`, 0, true));
+  evIdx = 0;
+  renderBoard(); renderSlip($('slip-live'), false); renderKeli();
+}
+function renderKeli(){
+  const k = keliAt(race, simT), K = KELIT[k];
+  const turned = race.turnT != null && simT >= race.turnT;
+  $('kelibar').innerHTML = `<span>KELI: <em>${K.name}</em> ${K.temp}${turned ? ' · KÄÄNTYI' : ''}</span><span>VEDOT ${marketOpen() ? 'AUKI 8 KM ASTI' : 'SULJETTU'}</span>`;
+}
+function setSpeedBtns(){ $('speed').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sp === String(speed)))); }
+$('speed').querySelectorAll('button').forEach(b => b.onclick = () => {
+  if (b.dataset.sp === 'end') { soloJumpEnd(); return; }
+  const now = performance.now() / 1000, cur = soloElapsed(now);
+  speed = +b.dataset.sp; soloBase = { at: now, el: cur }; setSpeedBtns();
+});
+$('livebtn').onclick = () => {
+  const open = $('mk-live').hidden;
+  $('mk-live').hidden = !open; $('livebtn').setAttribute('aria-expanded', String(open));
+  $('livebtn').textContent = open ? 'PIILOTA LIVEVEDOT' : 'LYÖ LIVEVETO';
+  if (open) renderMarket($('mk-live'), true);
+};
+
+// Aikajana: kisan "katsoja-aika" el (s) → kisasekunnit. Voittajan jälkeen 3× nopeammin. Moninpelissä el tulee kellosta.
+function simFromEl(el){
+  const W = race.ft[race.order[0]], e1 = W / SCALE;
+  return el <= e1 ? el * SCALE : W + (el - e1) * SCALE * 3;
+}
+function endEl(){ const W = race.ft[race.order[0]], L = race.ft[race.order[race.order.length - 1]]; return W / SCALE + (L - W) / (SCALE * 3); }
+let soloBase = { at: 0, el: 0 };
+function soloElapsed(now){ return soloBase.el + (now - soloBase.at) * speed; }
+function soloJumpEnd(){ soloBase = { at: performance.now() / 1000, el: endEl() + 1 }; speed = 1; }
+
+function frame(){
+  const now = performance.now() / 1000;
+  if (phase === 'lobby' && mode === 'poru' && room) {
+    const left = (room.startTs - Date.now()) / 1000;
+    renderGo();
+    if (left <= 2 && left > 0 && !beeped) { beeped = true; startBeeps(left); }
+    if (left <= 0) {
+      if (-left > endEl() + 5) { phase = 'race'; beginRace(); simT = race.T; finishRace(true); }
+      else beginRace();
+    }
+  }
+  if (phase === 'race') {
+    let el;
+    if (mode === 'poru' && room) el = (Date.now() - room.startTs) / 1000;
+    else { if (soloStart && now < soloStart) el = 0; else { if (soloStart) { soloBase = { at: soloStart, el: 0 }; soloStart = null; } el = soloElapsed(now); } }
+    const pre = (mode === 'solo' && soloStart) ? soloStart - now : 0;
+    const t = Math.min(race.T, simFromEl(Math.max(0, el)));
+    const jumped = t - simT > 400;
+    simT = t;
+    while (evIdx < race.events.length && race.events[evIdx].t <= simT) { const e = race.events[evIdx++]; if (!jumped || simT - e.t < 120) narrate(e); }
+    draw(pre); updateHeader();
+    if (now - lastBoard > .3) {
+      lastBoard = now; renderBoard(); renderKeli();
+      if (!$('mk-live').hidden) { const key = Math.floor(simT / 60); if (key !== frame.mkKey || frame.open !== marketOpen()) { frame.mkKey = key; frame.open = marketOpen(); renderMarket($('mk-live'), true); } }
+    }
+    if (el > endEl() + .8) finishRace(false);
+  }
+  requestAnimationFrame(frame);
+}
+
+function gapOf(i, lead, t){
+  if (i === lead) return 0;
+  if (doneBy(i, t) && doneBy(lead, t)) return race.ft[i] - race.ft[lead];
+  const X = race.XS, j = Math.min(X.length - 1, Math.floor(t)), xi = X[j][i];
+  let lo = 0, hi = j; // milloin kärki ohitti xi:n
+  while (lo < hi) { const m = (lo + hi) >> 1; if (X[m][lead] >= xi) hi = m; else lo = m + 1; }
+  return t - lo;
+}
+const pick = (arr, salt) => arr[(race.seed + salt) % arr.length];
+const FALL = ['{n} kaatui. Välineet tarkastetaan, matka jatkuu.', '{n} meni nurin. Markkina reagoi.', '{n} kaatui. Latu kesti.', '{n} kävi hangessa. Kerroin liikkui.'];
+function narrate(e){
+  const n = e.i >= 0 ? nk(e.i) : '';
+  switch (e.type) {
+    case 'fall': say(pick(FALL, Math.floor(e.t)).replace('{n}', n), e.t, true); break;
+    case 'hissi': say('<b>Godzilla pysähtyi puolivälissä ja kysyi, missä hissi on.</b> Pelivinkki osui.', e.t, true); break;
+    case 'ensiapu': say('Godzilla ohitti 5 km:n ensiapupisteen. Henkilökunta jäi valmiuteen.', e.t); break;
+    case 'pohje': say('Tuomaristo pysäytti Pohjeen tarkastukseen. Pohkeita ei lasketa välineiksi.', e.t, true); break;
+    case 'huolto': say('Staga pysähtyi huoltopisteelle. Palvelut lähellä. Maali yhä ei.', e.t); break;
+    case 'lead': if (e.t - (race.lastLead || -999) > 120) { race.lastLead = e.t; say(`<b>${n} nousee johtoon.</b>`, e.t, true); } break;
+    case 'wax': {
+      const L = e.hit > 1 ? `<b>${n}: voitelu osui.</b> Sukset kulkevat.` : e.hit < 1 && e.hit > .98 ? `${n}: voitelu menettelee. Ei hyvä, ei huono.` : `<b>${n}: voitelu meni ohi.</b> Huolto katsoo maahan.`;
+      say(L, e.t, e.hit !== WAX_NEAR); break;
+    }
+    case 'turn': say(`<b>Sää kääntyy:</b> ${KELIT[e.from].name.toLowerCase()} vaihtuu, nyt ${KELIT[e.to].name.toLowerCase()} ${KELIT[e.to].temp}. Voitelut arvioidaan uudelleen.`, e.t, true); tone(660, .3, 0, .06); break;
+    case 'split': {
+      const o = orderAt(race, e.t), j = Math.floor(e.m / 100);
+      const parts = o.map((q, k) => k === 0 ? nk(q) : `${nk(q)} ${fmtGap(gapAtDist(q, o[0], e.m))}`);
+      say(`Väliaika ${kmTxt(e.m)} km: ${parts.join(', ')}.`, e.t); tone(1046, .08, 0, .05); break;
+    }
+    case 'finish': {
+      const lead = race.order[0], g = e.ft - race.ft[lead];
+      if (e.pos === 1) { say(`<b>${n} maalissa ${fmt(e.ft)}. Voittaja.</b>`, e.ft, true); bell(true); }
+      else if (e.pos === 2 && g < 1) { say(`<b>Maalikamera:</b> ${n} jäi ${g.toFixed(1).replace('.', ',')} s.`, e.ft, true); bell(false); }
+      else if (SKIERS[e.i].id === 'godzilla' && e.pos === race.starters.length) { say(`Godzilla maalissa, ${fmtGap(g)}. Ensiapupiste puretaan.`, e.ft); bell(false); }
+      else { say(`${n} maalissa, ${fmtGap(g)}.`, e.ft); bell(false); }
+      break;
+    }
+  }
+}
+function timeAtDist(i, m){ const X = race.XS; for (let j = 0; j < X.length; j++) if (X[j][i] >= m) return j; return X.length; }
+function gapAtDist(i, lead, m){ return timeAtDist(i, m) - timeAtDist(lead, m); }
+function say(html, t, hot){
+  const li = document.createElement('li');
+  if (hot) li.className = 'hot';
+  li.innerHTML = `<span>${fmt(t)}</span><div>${html}</div>`;
+  const f = $('feed'); f.prepend(li);
+  while (f.children.length > 5) f.lastChild.remove();
+}
+function updateHeader(){
+  const o = orderAt(race, simT), j = Math.min(race.XS.length - 1, Math.floor(simT));
+  const allDone = race.starters.every(i => doneBy(i, simT));
+  $('clock').textContent = fmt(allDone ? Math.max(...race.starters.map(i => race.ft[i])) : simT);
+  $('km').textContent = kmTxt(race.XS[j][o[0]]) + ' / 10 KM';
+}
+function renderBoard(){
+  const t = simT, o = orderAt(race, t), lead = o[0], j = Math.min(race.XS.length - 1, Math.floor(t));
+  const open = marketOpen(), P = mk(t), prev = mkCache[String(Math.floor(t / 60) * 60 - 60)];
+  $('board').innerHTML = `<div class="bh"><span></span><span></span><span>HIIHTÄJÄ</span><span></span><span>ERO</span><span>VOITTAJA</span></div>` + o.map((i, p) => {
+    const done = doneBy(i, t), stc = race.STS[j][i], stop = race.STOPS[j][i] > 0;
+    const st = done ? 'MAALISSA' : ST[stc] || '';
+    const g = done && p === 0 ? fmt(race.ft[i]) : p === 0 ? fmt(t) : fmtGap(gapOf(i, lead, t));
+    const k = toOdds(P.win[i]), k0 = prev ? toOdds(prev.win[i]) : null;
+    const cls = k0 && k && k < k0 ? 'dn' : '';
+    const mine = bets.some(b => (b.type === 'win' || b.type === 'top2') && b.a === i);
+    return `<div class="brow"><span class="p">${p + 1}</span><span class="mi"><img src="img/${SKIERS[i].id}-${stc === 4 && stop ? 'kaatui' : 'hiihto'}.jpg" alt=""></span>
+      <span class="n ${mine ? 'mine' : ''}">${nk(i)}</span><span class="st ${stop ? 'alert' : ''}">${st}</span><span class="g">${g}</span>
+      <button class="lo ${cls}" type="button" data-i="${i}" ${open && k ? '' : 'disabled'}>${open && k ? odd(k) : '–'}</button></div>`;
+  }).join('');
+  $('board').querySelectorAll('.lo').forEach(b => b.onclick = () => {
+    tab = 'win'; sel = { type:'win', a:+b.dataset.i };
+    $('mk-live').hidden = false; $('livebtn').setAttribute('aria-expanded', 'true'); $('livebtn').textContent = 'PIILOTA LIVEVEDOT';
+    renderMarket($('mk-live'), true);
+    $('mk-live').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+// ---------- piirto ----------
+let dpr = 1;
+function sizeCanvases(){
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  ['ov', 'zoom'].forEach(id => { const c = $(id), r = c.getBoundingClientRect(); c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); });
+}
+window.addEventListener('resize', () => { if (phase === 'race') sizeCanvases(); });
+const INK = '#1b1714', RED = '#b8232b', MUTED = '#5d534a', PAPER = '#ecdfc0', PAPER2 = '#e0cfa8', SNOW = '#f2e8cf';
+function hash(n){ n = Math.sin(n * 127.1 + 311.7) * 43758.5453; return n - Math.floor(n); }
+function posAt(i, t){ const X = race.XS, j = Math.min(X.length - 1, Math.floor(t)), j2 = Math.min(X.length - 1, j + 1), f = t - Math.floor(t); return X[j][i] + (X[j2][i] - X[j][i]) * f; }
+function draw(pre){ drawOverview(); drawZoom(pre); }
+const VIEW = 420;
+let ELEV = null;
+function drawOverview(){
+  const c = $('ov'), x = c.getContext('2d'), W = c.width / dpr, H = c.height / dpr;
+  x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, W, H);
+  const pad = 6, top = 8, base = H - 16, X = m => pad + (W - 2 * pad) * m / COURSE;
+  if (!ELEV) { let mn = 1e9, mx = -1e9; for (let m = 0; m <= COURSE; m += 50) { const e = elev(m); mn = Math.min(mn, e); mx = Math.max(mx, e); } ELEV = { mn, mx }; }
+  const Y = e => base - (e - ELEV.mn) / (ELEV.mx - ELEV.mn) * (base - top - 8);
+  x.beginPath(); x.moveTo(X(0), base);
+  for (let m = 0; m <= COURSE; m += 50) x.lineTo(X(m), Y(elev(m)));
+  x.lineTo(X(COURSE), base); x.closePath(); x.fillStyle = PAPER2; x.fill();
+  x.beginPath(); for (let m = 0; m <= COURSE; m += 50) x[m ? 'lineTo' : 'moveTo'](X(m), Y(elev(m)));
+  x.strokeStyle = INK; x.lineWidth = 1.5; x.stroke();
+  x.fillStyle = MUTED; x.font = '600 8px Oswald, sans-serif'; x.textAlign = 'center';
+  for (let m = 0; m <= COURSE; m += 2500) { x.fillRect(X(m) - .5, base, 1, 4); x.fillText(m === COURSE ? 'MAALI' : (m / 1000).toString().replace('.', ',') + ' KM', Math.min(W - 16, Math.max(12, X(m))), H - 3); }
+  x.fillStyle = RED; x.fillRect(X(CLOSE_X) - .5, top, 1, base - top);
+  x.strokeStyle = INK; x.lineWidth = 1; x.beginPath(); x.moveTo(pad, base + .5); x.lineTo(W - pad, base + .5); x.stroke();
+  const o = orderAt(race, simT);
+  o.slice().reverse().forEach(i => {
+    const p = posAt(i, simT), px = X(p), py = Y(elev(p)), lead = i === o[0];
+    x.beginPath(); x.arc(px, py, lead ? 6.5 : 5.5, 0, 7); x.fillStyle = lead ? RED : INK; x.fill();
+    x.fillStyle = PAPER; x.font = '8px "Alfa Slab One", serif'; x.textBaseline = 'middle'; x.fillText(SKIERS[i].bib, px, py + .5); x.textBaseline = 'alphabetic';
+  });
+  x.strokeStyle = RED; x.lineWidth = 1; x.setLineDash([2, 2]);
+  x.strokeRect(X(Math.max(0, camX)), top - 4, Math.max(4, X(camX + VIEW) - X(Math.max(0, camX))), base - top + 4); x.setLineDash([]);
+}
+function drawZoom(pre){
+  const c = $('zoom'), x = c.getContext('2d'), W = c.width / dpr, H = c.height / dpr;
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  x.fillStyle = SNOW; x.fillRect(0, 0, W, H);
+  const t = simT, o = orderAt(race, t), lead = o.find(i => !doneBy(i, t));
+  const leadX = lead != null ? posAt(lead, t) : COURSE;
+  const target = Math.min(COURSE - VIEW * .78, Math.max(-VIEW * .22, leadX - VIEW * .72));
+  const dC = target - camX;
+  if (Math.abs(dC) > VIEW || t < 2) camX = target; else camX += dC * .15;
+  if (lead != null) camX = Math.min(Math.max(camX, leadX - VIEW * .85), leadX - VIEW * .3);
+  const X = m => (m - camX) / VIEW * W, band = 26, laneH = (H - band * 2) / 4;
+  for (let b = Math.floor(camX / 18) - 1; b < (camX + VIEW) / 18 + 1; b++) for (const side of [0, 1]) {
+    const r = hash(b * 2 + side * 977); if (r < .45) continue;
+    const tx = X(b * 18 + r * 12), h = 12 + r * 10, by = side ? H - 2 : band - 2;
+    x.fillStyle = side ? 'rgba(27,23,20,.55)' : 'rgba(27,23,20,.35)';
+    x.beginPath(); x.moveTo(tx, by - h); x.lineTo(tx - h * .32, by); x.lineTo(tx + h * .32, by); x.closePath(); x.fill();
+  }
+  for (let i = 0; i < 4; i++) { const cy = band + laneH * (i + .5); x.strokeStyle = 'rgba(27,23,20,.22)'; x.lineWidth = 1; for (const d of [-5, 5]) { x.beginPath(); x.moveTo(0, cy + d + 8); x.lineTo(W, cy + d + 8); x.stroke(); } }
+  x.strokeStyle = INK; x.lineWidth = 1.5; x.beginPath(); x.moveTo(0, band); x.lineTo(W, band); x.moveTo(0, H - band); x.lineTo(W, H - band); x.stroke();
+  x.font = '600 9px Oswald, sans-serif'; x.textAlign = 'center';
+  for (let m = Math.ceil(camX / 100) * 100; m < camX + VIEW; m += 100) {
+    if (m < 0 || m > COURSE) continue;
+    const px = X(m); x.fillStyle = 'rgba(27,23,20,.25)'; x.fillRect(px - .5, band, 1, H - band * 2);
+    if (m % 1000 === 0 && m > 0 && m < COURSE) { x.fillStyle = m === CLOSE_X ? RED : INK; x.fillRect(px - 15, band - 13, 30, 13); x.fillStyle = PAPER; x.fillText(m / 1000 + ' KM', px, band - 3); }
+  }
+  if (X(5000) > -40 && X(5000) < W + 40) { const px = X(5000) + 26; x.fillStyle = RED; x.fillRect(px - 9, H - band + 6, 18, 14); x.fillStyle = PAPER; x.fillRect(px - 1.5, H - band + 8, 3, 10); x.fillRect(px - 5, H - band + 11.5, 10, 3); }
+  if (X(0) > -10 && X(0) < W) { x.fillStyle = INK; x.fillRect(X(0) - 1, band, 2, H - band * 2); }
+  if (X(COURSE) < W + 10) {
+    const px = X(COURSE);
+    for (let y = band, j = 0; y < H - band; y += 6, j++) for (let k = 0; k < 2; k++) { x.fillStyle = (j + k) % 2 ? RED : INK; x.fillRect(px + k * 6, y, 6, 6); }
+    x.fillStyle = INK; x.fillRect(px - 2, band - 18, 32, 14); x.fillStyle = PAPER; x.textAlign = 'left'; x.fillText('MAALI', px + 2, band - 7); x.textAlign = 'center';
+  }
+  const R = Math.min(15, laneH * .42), j = Math.min(race.XS.length - 1, Math.floor(t));
+  race.sk.forEach((k, i) => {
+    const cy = band + laneH * (i + .5);
+    if (k.absent) { x.fillStyle = MUTED; x.font = '600 9px Oswald, sans-serif'; x.textAlign = 'left'; x.fillText(`${k.s.bib} · ${k.s.nick.toUpperCase()} · EI LÄHTÖÄ`, 8, cy + 3); x.textAlign = 'center'; return; }
+    const p = posAt(i, t), px = X(p), stop = race.STOPS[j][i] > 0, stc = race.STS[j][i];
+    const off = px < R + 4 ? 'L' : px > W - R - 4 ? 'R' : '';
+    if (off) {
+      x.font = '600 9px Oswald, sans-serif';
+      const txt = off === 'L' ? `◀ ${k.s.nick.toUpperCase()} ${doneBy(i, t) ? '' : fmtGap(gapOf(i, o[0], t))}` : `${k.s.nick.toUpperCase()} ▶`;
+      x.textAlign = off === 'L' ? 'left' : 'right';
+      x.fillStyle = 'rgba(242,232,207,.9)'; const tw = x.measureText(txt).width; x.fillRect(off === 'L' ? 4 : W - 8 - tw, cy - 8, tw + 6, 15);
+      x.fillStyle = stop ? RED : INK; x.fillText(txt, off === 'L' ? 7 : W - 5, cy + 3); x.textAlign = 'center'; return;
+    }
+    const ph = (p / 3) % (Math.PI * 2), sw = stop || doneBy(i, t) ? 0 : Math.sin(ph) * 5;
+    x.strokeStyle = INK; x.lineWidth = 2; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(px - R - 6 + sw, cy + R + 2); x.lineTo(px + R + 8 + sw, cy + R + 2); x.stroke();
+    x.beginPath(); x.moveTo(px - R - 6 - sw, cy + R - 1); x.lineTo(px + R + 8 - sw, cy + R - 1); x.stroke();
+    x.lineWidth = 1.5; x.beginPath(); x.moveTo(px + 2, cy); x.lineTo(px - R - 4 + sw * 1.5, cy + R + 3); x.stroke();
+    x.save(); x.beginPath(); x.arc(px, cy, R, 0, 7); x.closePath(); x.clip();
+    const fell = stop && stc === 4, im = imgs[k.s.id + (fell ? 'kaatui' : 'hiihto')];
+    if (im.complete && im.naturalWidth) { const f = im.naturalWidth / 720, c = fell ? [360, 190] : [340, 165], h = 160 * f; x.drawImage(im, c[0] * f - h, c[1] * f - h, h * 2, h * 2, px - R, cy - R, R * 2, R * 2); } else { x.fillStyle = INK; x.fill(); }
+    x.restore();
+    const isLead = i === o[0];
+    x.beginPath(); x.arc(px, cy, R, 0, 7); x.lineWidth = isLead ? 3 : 2; x.strokeStyle = stop || isLead ? RED : INK; x.stroke();
+    const mine = bets.some(b => (b.type === 'win' || b.type === 'top2') && b.a === i);
+    x.fillStyle = mine ? RED : INK; x.fillRect(px - R - 9, cy - R - 2, 15, 13);
+    x.fillStyle = PAPER; x.font = '10px "Alfa Slab One", serif'; x.fillText(k.s.bib, px - R - 1.5, cy - R + 8.5);
+    if (stop) { x.font = '600 9px Oswald, sans-serif'; const tx = ST[stc]; const tw = x.measureText(tx).width + 8; x.fillStyle = RED; x.fillRect(px + R + 4, cy - 7, tw, 13); x.fillStyle = PAPER; x.textAlign = 'left'; x.fillText(tx, px + R + 8, cy + 3); x.textAlign = 'center'; }
+  });
+  if (pre > 0) {
+    const n = pre > 1.3 ? 3 : pre > .7 ? 2 : pre > .1 ? 1 : 0;
+    x.fillStyle = 'rgba(236,223,192,.75)'; x.fillRect(0, 0, W, H);
+    x.fillStyle = n ? INK : RED; x.font = '64px Anton, Impact, sans-serif'; x.textBaseline = 'middle'; x.fillText(n ? String(n) : 'HEP!', W / 2, H / 2 + 2); x.textBaseline = 'alphabetic';
+  }
+}
+
+// ---------- tulos ----------
+const VIEWS = {
+  pohje: 'Suosikki voitti. Markkina pitää tätä todisteena omasta osaamisestaan.',
+  jamo: 'Jamo ehti lähtöön ja maaliin. Kumpaakaan ei hinnoiteltu varmaksi.',
+  staga: 'Avauskerroin 13.00 osui. Kirjanpito on pyytänyt selvitystä.',
+  godzilla: 'Avauskerroin 51.00 osui. Vedonvälittäjä on poistunut paikalta.',
+};
+function settle(b){
+  const o = race.order, ab = i => race.sk[i].absent;
+  if (b.type === 'hissi') return race.hissiDone ? 'win' : 'lose';
+  if (b.type === 'u60') return ab(0) ? 'void' : race.ft[0] < 3600 ? 'win' : 'lose';
+  if ((b.a != null && ab(b.a)) || (b.b != null && ab(b.b))) return 'void';
+  if (b.type === 'win') return o[0] === b.a ? 'win' : 'lose';
+  if (b.type === 'top2') return o[0] === b.a || o[1] === b.a ? 'win' : 'lose';
+  if (b.type === 'ex') return o[0] === b.a && o[1] === b.b ? 'win' : 'lose';
+  if (b.type === 'pair') return race.ft[b.a] < race.ft[b.b] ? 'win' : 'lose';
+  return 'lose';
+}
+function finishRace(late){
+  if (phase !== 'race' || settled) return;
+  settled = true; phase = 'res';
+  try { wakeLock && wakeLock.release(); } catch (e) {}
+  setCtx('MAALI', false);
+  const o = race.order, w = o[0], W = SKIERS[w];
+  stats.n++; stats.w[W.id] = (stats.w[W.id] || 0) + 1; store.set('vw-ski-stats', stats);
+  const photo = o[1] != null && race.ft[o[1]] - race.ft[w] < 1;
+  $('winner').innerHTML = `<div class="ph"><img src="img/${W.id}-voitto.jpg" alt="${W.nick} maalissa"><span class="wst">1.</span></div>
+    <div><div class="wf">VOITTAJA · ${W.name}</div><div class="wn">${W.nick}</div><div class="wt">${fmt(race.ft[w])}</div>
+    <div class="wv">${photo ? 'Ratkaistiin maalikameralla. ' : ''}${VIEWS[W.id]}</div></div>`;
+  const kTxt = (i, k) => k === race.keli ? 'osui' : KELIT[k].group === KELIT[race.keli].group ? 'meni' : 'ohi';
+  const rows = o.map((i, p) => `<tr><td class="p">${p + 1}</td><td class="n">${nk(i)}</td><td class="w">voitelu ${kTxt(i, race.sk[i].wax)}</td><td class="t">${fmt(race.ft[i])}</td><td class="gp">${p ? fmtGap(race.ft[i] - race.ft[w]) : ''}</td></tr>`);
+  race.sk.filter(k => k.absent).forEach(k => rows.push(`<tr><td class="p">–</td><td class="n">${k.s.nick}</td><td class="w"></td><td class="t">EI LÄHTÖÄ</td><td class="gp"></td></tr>`));
+  $('res').innerHTML = rows.join('');
+  $('reskeli').textContent = `Keli: ${KELIT[race.keli].name.toLowerCase()} ${KELIT[race.keli].temp}${race.turnT != null ? `, 5 km:n jälkeen ${KELIT[race.turn].name.toLowerCase()} ${KELIT[race.turn].temp}` : ''}. Ennuste antoi lähdön kelille ${race.forecast[race.keli]} %.`;
+  const L = []; let back = 0, staked = 0;
+  bets.forEach(b => {
+    const r = settle(b); staked += b.stake;
+    const lab = `${betLabel(b)} @ ${odd(b.odds)}${b.live ? ' (live)' : ''}`;
+    if (r === 'void') { back += b.stake; L.push(['', `${lab}: ei lähtöä, panos palautetaan`, `+${b.stake}`]); }
+    else if (r === 'win') { const p = Math.round(b.stake * b.odds); back += p; L.push(['plus', `${lab}: osui`, `+${p}`]); }
+    else L.push(['', `${lab}: ei osunut`, `−${b.stake}`]);
+  });
+  if (!bets.length) L.push(['', late ? 'Liityit kisaan sen jo päätyttyä. Ei vetoja.' : 'Ei vetoja tällä kertaa.', '']);
+  else L.push(['', 'Tämän lähdön tulos', (back - staked >= 0 ? '+' : '−') + Math.abs(back - staked) + ' MK']);
+  if (race.hissiDone && !bets.some(b => b.type === 'hissi')) L.push(['', 'Godzilla kysyi hissiä. Pelivinkki olisi maksanut.', '']);
+  kassa += back; store.set('vw-ski-kassa', kassa);
+  L.push(['sum', 'KASSA', kassa + ' MK']);
+  $('till').innerHTML = L.map(([c, a, b]) => `<div class="${c}"><span>${a}</span><b>${b}</b></div>`).join('');
+  race.net = back - staked;
+  $('share').hidden = mode !== 'poru';
+  setTimeout(() => show('res'), late ? 0 : 900);
+}
+$('share').onclick = () => {
+  const name = store.get('vw-ski-name', '') || 'Nimetön';
+  const n = race.net >= 0 ? `+${race.net}` : `−${-race.net}`;
+  copy(`Vierumäki Hiihto ${room ? room.code : ''}: ${nk(race.order[0])} voitti ${fmt(race.ft[race.order[0]])}. ${name}: ${n} mk, kassa ${kassa} mk.`, $('sharemsg'));
+};
+$('again').onclick = () => {
+  phase = 'lobby'; setCtx('LAUANTAI', false);
+  if (mode === 'poru') { room = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+  newSolo(); renderStart(); show('start');
+};
+
+// ---------- käynnistys ----------
+renderSound();
+const hm = /^#l(\d{5})$/.exec(location.hash);
+const hr = hm && roomFromCode(hm[1]);
+if (hr && Date.now() < hr.startTs + 6 * 60000) enterRoom(hr); else { newSolo(); renderStart(); }
+requestAnimationFrame(frame);
+</script>
+
+</body></html>
