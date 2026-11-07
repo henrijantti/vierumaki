@@ -199,6 +199,7 @@ canvas { display: block; width: 100%; }
 .feed li:first-child { font-weight: 600; }
 .feed li span { font-family: var(--f-slab); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .feed li.hot b { color: var(--red); font-weight: 600; }
+.feed li .fph { float: right; width: 84px; height: 84px; object-fit: cover; margin: 0 0 4px 8px; border: 2px solid var(--ink); }
 .speed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
 .speed button { background: transparent; border: 1.5px solid var(--ink); font-weight: 600; font-size: 12px; letter-spacing: 2px; padding: 8px 0; }
 .speed button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
@@ -582,7 +583,7 @@ let tab = 'win';
 let simT = 0, speed = 1, soloStart = null, evIdx = 0, camX = 0, lastBoard = 0, settled = false, beeped = false;
 const mkCache = {};
 const imgs = {};
-SKIERS.forEach(s => ['kasvo'].forEach(v => { const im = new Image(); im.src = `img/${s.id}-${v}.jpg`; imgs[s.id + v] = im; }));
+SKIERS.forEach(s => ['kasvo', 'kaatui', 'maali'].forEach(v => { const im = new Image(); im.src = `img/${s.id}-${v}.jpg`; imgs[s.id + v] = im; }));
 
 // ---------- ääni ----------
 let soundOn = store.get('vw-ski-sound', true), AC = null;
@@ -1106,7 +1107,7 @@ const FALL = ['{n} kaatui. Välineet tarkastetaan, matka jatkuu.', '{n} meni nur
 function narrate(e){
   const n = e.i >= 0 ? nk(e.i) : '';
   switch (e.type) {
-    case 'fall': say(pick(FALL, Math.floor(e.t)).replace('{n}', n), e.t, true); break;
+    case 'fall': say(pick(FALL, Math.floor(e.t)).replace('{n}', n), e.t, true, SKIERS[e.i].id + '-kaatui'); break;
     case 'hissi': say('<b>Godzilla pysähtyi puolivälissä ja kysyi, missä hissi on.</b> Pelivinkki osui.', e.t, true); break;
     case 'ensiapu': say('Godzilla ohitti 5 km:n ensiapupisteen. Henkilökunta jäi valmiuteen.', e.t); break;
     case 'pohje': say('Tuomaristo pysäytti Pohjeen tarkastukseen. Pohkeita ei lasketa välineiksi.', e.t, true); break;
@@ -1124,7 +1125,7 @@ function narrate(e){
     }
     case 'finish': {
       const lead = race.order[0], g = e.ft - race.ft[lead];
-      if (e.pos === 1) { say(`<b>${n} maalissa ${fmt(e.ft)}. Voittaja.</b>`, e.ft, true); bell(true); }
+      if (e.pos === 1) { say(`<b>${n} maalissa ${fmt(e.ft)}. Voittaja.</b>`, e.ft, true, SKIERS[e.i].id + '-maali'); bell(true); }
       else if (e.pos === 2 && g < 1) { say(`<b>Maalikamera:</b> ${n} jäi ${g.toFixed(1).replace('.', ',')} s.`, e.ft, true); bell(false); }
       else if (SKIERS[e.i].id === 'godzilla' && e.pos === race.starters.length) { say(`Godzilla maalissa, ${fmtGap(g)}. Ensiapupiste puretaan.`, e.ft); bell(false); }
       else { say(`${n} maalissa, ${fmtGap(g)}.`, e.ft); bell(false); }
@@ -1134,10 +1135,10 @@ function narrate(e){
 }
 function timeAtDist(i, m){ const X = race.XS; for (let j = 0; j < X.length; j++) if (X[j][i] >= m) return j; return X.length; }
 function gapAtDist(i, lead, m){ return timeAtDist(i, m) - timeAtDist(lead, m); }
-function say(html, t, hot){
+function say(html, t, hot, ph){
   const li = document.createElement('li');
   if (hot) li.className = 'hot';
-  li.innerHTML = `<span>${fmt(t)}</span><div>${html}</div>`;
+  li.innerHTML = `<span>${fmt(t)}</span><div>${ph ? `<img class="fph" src="img/${ph}.jpg" alt="">` : ''}${html}</div>`;
   const f = $('feed'); f.prepend(li);
   while (f.children.length > 5) f.lastChild.remove();
 }
