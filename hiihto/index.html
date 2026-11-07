@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="../favicon.png"><link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <meta name="theme-color" content="#1b1714">
 </head><body>
+<script>window.VW_FB = {"apiKey": "AIzaSyDerrF6NnwPc8K78r1HwBaV_aKu0ZDzhAQ", "authDomain": "vieru-c0c26.firebaseapp.com", "databaseURL": "https://vieru-c0c26-default-rtdb.europe-west1.firebasedatabase.app", "projectId": "vieru-c0c26", "storageBucket": "vieru-c0c26.firebasestorage.app", "messagingSenderId": "1015498837897", "appId": "1:1015498837897:web:a3aab23cbfca672c96db58"};</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,6 +83,18 @@ h1 .red { color: var(--red); }
 .code span { text-align: right; font-weight: 600; font-size: 11px; letter-spacing: 1.5px; line-height: 15px; }
 .code span em { display: block; font-style: normal; font-family: var(--f-slab); font-size: 20px; letter-spacing: 1px; color: var(--red); font-variant-numeric: tabular-nums; }
 .hint { font-size: 12px; line-height: 16px; color: var(--muted); }
+.series { display: flex; flex-direction: column; }
+.series .h { display: flex; justify-content: space-between; font-weight: 600; font-size: 10px; letter-spacing: 2.5px; color: var(--muted); padding-bottom: 4px; border-bottom: 2px solid var(--ink); }
+.srow { display: grid; grid-template-columns: 20px 1fr auto 52px 62px; gap: 6px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.srow .p { font-family: var(--f-slab); }
+.srow .n { font-weight: 600; letter-spacing: .5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srow .d { font-size: 10.5px; color: var(--muted); letter-spacing: 1px; }
+.srow b { font-family: var(--f-slab); font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
+.srow b.neg { color: var(--red); }
+.srow .s { text-align: right; font-weight: 600; font-size: 11px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+.srow.me .n { color: var(--red); }
+.totonote { margin-top: 10px; text-align: center; font-weight: 600; font-size: 11px; letter-spacing: 1.5px; line-height: 16px; color: var(--muted); padding: 8px 6px; border: 1.5px dashed var(--rule-strong); }
+.opt small { display: block; font-size: 9.5px; letter-spacing: 1px; color: var(--muted); font-weight: 500; }
 
 /* Sääennuste */
 .wx { margin-top: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -264,6 +277,14 @@ table.res td.gp { text-align: right; color: var(--muted); width: 58px; }
           <div class="row" style="margin-top:8px"><input id="joincode" inputmode="numeric" maxlength="5" placeholder="KOODI" autocomplete="off" aria-label="Lähtökoodi"><button class="btn" id="join" type="button">LIITY</button></div>
           <div class="hint" id="roomhint" style="margin-top:6px">Yksi luo lähdön ja jakaa koodin. Sama kisa pyörii kaikkien puhelimissa samaan aikaan, ja jokainen lyö vetonsa omalla puhelimellaan.</div>
         </div>
+        <div id="toto" hidden>
+          <div class="row"><input id="tnimi" maxlength="16" placeholder="NIMESI" autocomplete="off" aria-label="Nimesi"></div>
+          <div class="code" id="tnext" style="margin-top:8px"><div><div class="lbl">SEURAAVA LÄHTÖ</div><b id="tcode">–</b></div><span id="ttime"></span></div>
+          <div class="row" style="margin-top:8px"><button class="btn ink" id="tcreate" type="button" style="flex:1">LUO LÄHTÖ</button><button class="btn" id="tinvite" type="button">KOPIOI KUTSU</button></div>
+          <div class="copied" id="tmsg"></div>
+          <div class="hint" id="thint">Totalisaattori: porukan vedot menevät samaan pottiin, ja osuneet jakavat koko potin panostensa suhteessa. Talo ei ota mitään. Kerroin selviää vasta lähtölaukauksella. Jokaisella on illan alussa 100 mk.</div>
+          <div class="series" id="series" style="margin-top:10px"></div>
+        </div>
         <div id="room-in" hidden>
           <div class="code"><div><div class="lbl">LÄHTÖKOODI</div><b id="rcode">00000</b></div><span id="rtime">LÄHTÖ KLO 00:00<em>0:00</em></span></div>
           <div class="row"><button class="btn" id="invite" type="button" style="flex:1">KOPIOI KUTSU</button><button class="btn" id="leave" type="button">POISTU</button></div>
@@ -299,6 +320,7 @@ table.res td.gp { text-align: right; color: var(--muted); width: 58px; }
       <div class="board" id="board"></div>
       <ul class="feed" id="feed" aria-live="polite"></ul>
       <button class="livebtn" id="livebtn" type="button" aria-expanded="false">LYÖ LIVEVETO</button>
+      <div class="totonote" id="totonote" hidden>TOTO SULJETTIIN LÄHTÖLAUKAUKSELLA.<br>TAULUN KERTOIMET OVAT MALLIN ARVIO, EIVÄT MAKSA MITÄÄN.</div>
       <div id="mk-live" hidden></div>
       <div class="slip" id="slip-live"></div>
       <div class="speed" id="speed">
@@ -316,6 +338,7 @@ table.res td.gp { text-align: right; color: var(--muted); width: 58px; }
       <div class="reskeli" id="reskeli"></div>
       <div class="slab"><span>TILITYS</span></div>
       <div class="till" id="till"></div>
+      <div class="series" id="series-res" style="margin-top:14px"></div>
       <div class="btnrow">
         <button class="go alt" id="share" type="button" hidden>KOPIOI TULOS</button>
         <div class="copied" id="sharemsg"></div>
@@ -541,6 +564,9 @@ const fmt = t => { t = Math.max(0, t); const m = Math.floor(t / 60), s = Math.fl
 const fmtGap = g => { g = Math.max(0, Math.round(g)); return '+' + Math.floor(g / 60) + ':' + String(g % 60).padStart(2, '0'); };
 const kmTxt = x => (x / 1000).toFixed(1).replace('.', ',');
 const odd = o => o == null ? '–' : o.toFixed(2);
+const FB = { ok:false, err:'', uid:null, off:0, api:null };
+const now2 = () => Date.now() + FB.off;
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 const hhmm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 
 // ---------- tila ----------
@@ -655,10 +681,175 @@ function copy(txt, el){
 $('mode').querySelectorAll('button').forEach(b => b.onclick = () => {
   if (b.dataset.m === mode) return;
   refundPre();
-  if (b.dataset.m === 'solo') { if (room) leaveRoom(); mode = 'solo'; }
-  else { mode = 'poru'; }
+  if (b.dataset.m === 'solo') { if (TOTO) { room = null; mode = 'solo'; newSolo(); } else if (room) leaveRoom(); mode = 'solo'; }
+  else { mode = 'poru'; if (TOTO) { room = null; fbInit(); totoSync(); return; } }
   renderStart();
 });
+
+// ---------- totalisaattori (Pages-versio, Firebase) ----------
+// Porukan vedot samaan pottiin, osuneet jakavat potin panosten suhteessa, ei talon osuutta.
+// Kisa on deterministinen siemenestä, joten jokainen laite laskee tuloksen ja tilityksen itse.
+const TOTO = !!(window.VW_FB || window.VW_FBMOCK);
+const ILTA = (() => { const d = new Date(); if (d.getHours() < 6) d.setDate(d.getDate() - 1); return '' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); })();
+let SER = { players:{}, races:{}, bets:{} }, serVer = 0, fbStarted = false;
+const rcache = {};
+const raceOf = code => rcache[code] || (rcache[code] = newRace(SER.races[code].seed));
+const isToto = () => TOTO && mode === 'poru' && !!room && !!room.toto;
+const bal = () => (TOTO && mode === 'poru') ? totoBal() : kassa;
+const myName = () => String(store.get('vw-ski-name', '') || '').trim();
+const sgn = n => (n >= 0 ? '+' : '−') + Math.round(Math.abs(n));
+async function fbInit(){
+  if (fbStarted) return; fbStarted = true;
+  try {
+    if (window.VW_FBMOCK) FB.api = await window.VW_FBMOCK();
+    else {
+      const B = 'https://www.gstatic.com/firebasejs/10.12.2/';
+      const [A, U, D] = await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-database.js')]);
+      const app = A.initializeApp(window.VW_FB), auth = U.getAuth(app), db = D.getDatabase(app);
+      const cr = await U.signInAnonymously(auth);
+      const R = p => D.ref(db, p);
+      FB.api = { uid: cr.user.uid,
+        sub: (p, cb, er) => D.onValue(R(p), s => cb(s.val()), er),
+        set: (p, v) => D.set(R(p), v),
+        push: (p, v) => { const r = D.push(R(p)); return D.set(r, v).then(() => r.key); },
+        remove: p => D.remove(R(p)) };
+    }
+    FB.uid = FB.api.uid;
+    FB.api.sub('.info/serverTimeOffset', v => { FB.off = v || 0; });
+    FB.api.sub('s/' + ILTA, v => {
+      SER = Object.assign({ players:{}, races:{}, bets:{} }, v || {}); serVer++; FB.ok = true; FB.err = '';
+      if (myName() && !(SER.players[FB.uid] || {}).name) FB.api.set(`s/${ILTA}/players/${FB.uid}`, { name: myName() }).catch(() => {});
+      totoSync();
+    }, () => { FB.err = 'Toto ei vastaa. Lataa sivu uudelleen hetken päästä.'; totoSync(); });
+  } catch (e) {
+    FB.err = 'Yhteys totoon ei auennut. Tarkista verkko ja lataa sivu uudelleen.'; fbStarted = false; totoSync();
+  }
+}
+function activeRace(){
+  const t = now2(); let best = null;
+  for (const [c, r] of Object.entries(SER.races || {})) {
+    if (!r || typeof r.seed !== 'number') continue;
+    if (t < r.startTs + (endEl(raceOf(c)) + 2) * 1000 && (!best || r.startTs < best.startTs)) best = { code: c, startTs: r.startTs, seed: r.seed, toto: true };
+  }
+  return best;
+}
+function betsOf(code){
+  const all = [];
+  for (const [uid, m] of Object.entries((SER.bets || {})[code] || {})) for (const [id, b] of Object.entries(m || {})) if (b && b.stake) all.push(Object.assign({ uid, id }, b));
+  return all.sort((x, y) => (x.t || 0) - (y.t || 0));
+}
+function totoSync(){
+  if (!TOTO || mode !== 'poru') return;
+  if (phase === 'lobby') {
+    const a = activeRace();
+    if (a && (!room || room.code !== a.code)) { room = a; prepRace(a.seed, 'toto' + a.code); }
+    else if (a && room) room.startTs = a.startTs;
+    else if (!a && room) room = null;
+  }
+  if (room && room.toto) bets = betsOf(room.code).filter(b => b.uid === FB.uid);
+  if (phase === 'lobby') renderStart();
+  else if (phase === 'res') renderSeries($('series-res'));
+}
+const totoPool = () => room && room.toto ? betsOf(room.code) : [];
+const poolKey = b => b.type === 'pair' ? 'pair' + Math.min(b.a, b.b) + Math.max(b.a, b.b) : b.type;
+const sameOpt = (b, o) => b.type === o.type && (b.a ?? null) === (o.a ?? null) && (b.b ?? null) === (o.b ?? null);
+const totoW = o => totoPool().filter(b => sameOpt(b, o)).reduce((x, b) => x + b.stake, 0);
+function totoEst(o, s){
+  const L = totoPool().filter(b => poolKey(b) === poolKey(o));
+  const T = L.reduce((x, b) => x + b.stake, 0) + s, W = L.filter(b => sameOpt(b, o)).reduce((x, b) => x + b.stake, 0) + s;
+  return o.type === 'top2' ? 1 + (T - W) / 2 / W : T / W;
+}
+function totoSettle(code){
+  const R = raceOf(code), all = betsOf(code), pools = {}, info = [];
+  all.forEach(b => { b.r = settleR(R, b); b.back = 0; if (b.r === 'void') b.back = b.stake; else (pools[poolKey(b)] = pools[poolKey(b)] || []).push(b); });
+  for (const [k, L] of Object.entries(pools)) {
+    const T = L.reduce((s, b) => s + b.stake, 0), Wn = L.filter(b => b.r === 'win'), W = Wn.reduce((s, b) => s + b.stake, 0);
+    if (!W) { L.forEach(b => { b.back = b.stake; b.r = 'refund'; }); info.push({ k, T, div: null }); continue; }
+    if (k === 'top2') {
+      const by = {}; Wn.forEach(b => by[b.a] = (by[b.a] || 0) + b.stake);
+      const n = Object.keys(by).length, prof = T - W;
+      Wn.forEach(b => b.back = b.stake + b.stake * prof / n / by[b.a]);
+      info.push({ k, T, div: Object.fromEntries(Object.entries(by).map(([a, w]) => [a, 1 + prof / n / w])) });
+    } else { Wn.forEach(b => b.back = b.stake * T / W); info.push({ k, T, div: T / W }); }
+  }
+  const net = {}; all.forEach(b => net[b.uid] = (net[b.uid] || 0) + b.back - b.stake);
+  return { all, info, net };
+}
+let rowsMemo = { key: '', rows: [] };
+function seriesRows(){
+  const t = now2(), key = serVer + '|' + Math.floor(t / 500);
+  if (rowsMemo.key === key) return rowsMemo.rows;
+  const net = {}, open = {}, starts = {};
+  for (const [c, r] of Object.entries(SER.races || {})) {
+    if (!r || typeof r.seed !== 'number') continue;
+    if (t >= r.startTs + (endEl(raceOf(c)) + .8) * 1000) {
+      const S = totoSettle(c);
+      for (const [u, n] of Object.entries(S.net)) { net[u] = (net[u] || 0) + n; starts[u] = (starts[u] || 0) + 1; }
+    } else betsOf(c).forEach(b => open[b.uid] = (open[b.uid] || 0) + b.stake);
+  }
+  const uids = new Set([...Object.keys(SER.players || {}), ...Object.keys(net), ...Object.keys(open)]);
+  const rows = [...uids].map(u => ({ u, name: ((SER.players || {})[u] || {}).name || 'Nimetön', net: net[u] || 0, open: open[u] || 0, starts: starts[u] || 0 }))
+    .sort((a, b) => b.net - a.net || a.name.localeCompare(b.name, 'fi'));
+  rowsMemo = { key, rows };
+  return rows;
+}
+function totoBal(){ const r = seriesRows().find(x => x.u === FB.uid); return Math.floor(100 + (r ? r.net - r.open : 0) + 1e-9); }
+function renderSeries(el){
+  const R = seriesRows().filter(r => r.starts || r.open || r.u === FB.uid);
+  if (!R.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="h"><span>ILLAN SARJA · ${R.length} ${R.length === 1 ? 'PELAAJA' : 'PELAAJAA'}</span><span>SALDO</span></div>` +
+    R.map((r, i) => `<div class="srow ${r.u === FB.uid ? 'me' : ''}"><span class="p">${i + 1}</span><span class="n">${esc(r.name)}</span><span class="d">${r.starts} ${r.starts === 1 ? 'LÄHTÖ' : 'LÄHTÖÄ'}</span><b class="${r.net < 0 ? 'neg' : ''}">${sgn(r.net)}</b><span class="s">${Math.floor(100 + r.net + 1e-9)} MK</span></div>`).join('');
+}
+function seriesText(){
+  const R = seriesRows().filter(r => r.starts);
+  return `Vierumäki Hiihto, illan toto: ` + (R.length ? R.map((r, i) => `${i + 1}. ${r.name} ${sgn(r.net)}`).join(' · ') : 'ei vielä tilitettyjä lähtöjä') + `. ${location.origin}${location.pathname}#toto`;
+}
+const POOLN = { win: 'voittaja', top2: 'sija 1–2', ex: 'kaksari', hissi: 'hissi', u60: 'Godzilla 60:00' };
+const poolName = k => POOLN[k] || `${nk(+k[4])}–${nk(+k[5])}`;
+function totoTill(late){
+  const S = totoSettle(room.code), mine = S.all.filter(b => b.uid === FB.uid), L = [];
+  let back = 0, staked = 0;
+  mine.forEach(b => {
+    staked += b.stake; back += b.back; const lab = betLabel(b);
+    if (b.r === 'void') L.push(['', `${lab}: ei lähtöä, panos palautetaan`, `+${b.stake}`]);
+    else if (b.r === 'refund') L.push(['', `${lab}: kukaan ei osunut, panos palautetaan`, `+${b.stake}`]);
+    else if (b.r === 'win') L.push(['plus', `${lab}: osui, osinko ${odd(b.back / b.stake)}`, `+${Math.round(b.back)}`]);
+    else L.push(['', `${lab}: ei osunut`, `−${b.stake}`]);
+  });
+  if (!mine.length) L.push(['', late ? 'Liityit kisaan sen jo päätyttyä.' : 'Et lyönyt vetoa tähän lähtöön.', '']);
+  else L.push(['', 'Tämän lähdön tulos', sgn(back - staked) + ' MK']);
+  if (S.info.length) L.push(['', `<b style="font-family:inherit;letter-spacing:2px;font-size:10px;color:var(--muted)">POTIT · ${S.all.length} VETOA</b>`, '']);
+  S.info.forEach(p => L.push(['', `${poolName(p.k)}, potti ${Math.round(p.T)} mk`, p.div == null ? 'PALAUTUS' : typeof p.div === 'number' ? odd(p.div) : Object.entries(p.div).map(([a, d]) => `${nk(+a)} ${odd(d)}`).join(' · ')]));
+  L.push(['sum', 'ILLAN SALDO', bal() + ' MK']);
+  $('till').innerHTML = L.map(([c, a, b]) => `<div class="${c}"><span>${a}</span><b>${b}</b></div>`).join('');
+  renderSeries($('series-res'));
+}
+function renderTotoPanel(){
+  if (document.activeElement !== $('tnimi')) $('tnimi').value = myName();
+  const ok = FB.ok;
+  $('tnext').hidden = !ok || !room; $('tcreate').hidden = !ok || !!room; $('tinvite').hidden = !ok;
+  if (room) $('tcode').textContent = hhmm(new Date(room.startTs));
+  if (!ok) { $('series').innerHTML = `<div class="hint">${FB.err || 'Yhdistetään totoon…'}</div>`; return; }
+  renderSeries($('series'));
+}
+function saveTName(){
+  const v = $('tnimi').value.trim().slice(0, 16);
+  store.set('vw-ski-name', v);
+  if (v && FB.ok) FB.api.set(`s/${ILTA}/players/${FB.uid}`, { name: v }).catch(() => {});
+  return v;
+}
+$('tnimi').onchange = () => { saveTName(); if (room) { renderMarket($('mk-pre'), false); } };
+$('tnimi').oninput = () => { store.set('vw-ski-name', $('tnimi').value.trim().slice(0, 16)); if (room) renderMarket($('mk-pre'), false); };
+$('tcreate').onclick = () => {
+  if (!FB.ok) return;
+  if (!saveTName()) { $('tmsg').textContent = 'Kirjoita ensin nimesi.'; $('tnimi').focus(); return; }
+  const t = now2(), d = new Date(t + 150000); d.setSeconds(0, 0); if (d.getTime() - t < 120000) d.setMinutes(d.getMinutes() + 1);
+  const s3 = 100 + Math.floor(Math.random() * 900), mm = d.getMinutes(), code = String(s3) + String(mm).padStart(2, '0');
+  const seed = ((s3 * 100 + mm) * 1000 + d.getDate() * 24 + d.getHours()) >>> 0;
+  $('tmsg').textContent = '';
+  FB.api.set(`s/${ILTA}/races/${code}`, { startTs: d.getTime(), seed, by: FB.uid }).catch(() => { $('tmsg').textContent = 'Lähtöä ei voitu luoda. Yritä uudelleen.'; });
+};
+$('tinvite').onclick = () => copy(`Vierumäki Hiihto, toto auki${room ? `: seuraava lähtö klo ${hhmm(new Date(room.startTs))}` : ''}. ${location.origin}${location.pathname}#toto`, $('tmsg'));
 
 // ---------- vedot ----------
 function oddsFor(o, P){
@@ -675,8 +866,8 @@ function betLabel(o){
   if (o.type === 'top2') return `${nk(o.a)} kahden parhaan joukossa`;
   if (o.type === 'ex') return `Kaksari ${nk(o.a)}–${nk(o.b)}`;
   if (o.type === 'pair') return `${nk(o.a)} ennen ${fi(o.b, 'part')}`;
-  if (o.type === 'u60') return 'Godzilla alittaa tunnin';
-  if (o.type === 'hissi') return 'Pelivinkki: hissi';
+  if (o.type === 'u60') return o.a === 0 ? 'Godzilla ylittää tunnin' : 'Godzilla alittaa tunnin';
+  if (o.type === 'hissi') return o.a === 0 ? 'Godzilla ei kysy hissiä' : 'Pelivinkki: hissi';
   return '';
 }
 const leaderX = t => { const j = Math.max(0, Math.min(race.XS.length - 1, Math.floor(t))); return Math.max(...race.starters.map(i => race.XS[j][i])); };
@@ -697,11 +888,12 @@ function marketOpen(){ return !liveNow() || (leaderX(simT) < CLOSE_X && !race.st
 
 function renderMarket(el, live){
   if (live && !marketOpen()) { el.innerHTML = `<div class="closed">VEDOT SULJETTU · KÄRKI OHITTI 8 KM</div>`; return; }
-  const P = currentP(), prev = live ? mkCache[String(Math.floor(simT / 60) * 60 - 60)] : null;
+  const P = currentP(), prev = live ? mkCache[String(Math.floor(simT / 60) * 60 - 60)] : null, TT = isToto();
   const tabs = [['win', 'VOITTAJA'], ['top2', 'SIJA 1–2'], ['ex', 'KAKSARI'], ['pair', 'KAKSINKAMPPAILU'], ['spec', 'ERIKOISET']];
   const opt = (o, label) => {
-    const k = oddsFor(o, P), on = sel && sel.type === o.type && sel.a === o.a && sel.b === o.b;
+    const k = TT ? totoEst(o, stake) : oddsFor(o, P), on = sel && sel.type === o.type && sel.a === o.a && sel.b === o.b;
     const open = k != null && isOpen(o, live);
+    if (TT) return `<button class="opt" type="button" data-o='${JSON.stringify(o)}' aria-pressed="${on}"><span>${label}<small>POTISSA ${Math.round(totoW(o))} MK</small></span><b>${odd(k)}</b></button>`;
     let arrow = '';
     if (prev && o.type === 'win') { const k0 = oddsFor(o, prev); if (k0 && k && k < k0 - .001) arrow = ' ↓'; else if (k0 && k && k > k0 + .001) arrow = ' ↑'; }
     return `<button class="opt" type="button" data-o='${JSON.stringify(o)}' aria-pressed="${on}" ${open ? '' : 'disabled'}><span>${label}</span><b>${open ? odd(k) + arrow : '–'}</b></button>`;
@@ -713,15 +905,18 @@ function renderMarket(el, live){
     L.sort((x, y) => x.k - y.k);
     body = `<div class="opts">${L.map(o => opt({ type:'ex', a:o.a, b:o.b }, `${nk(o.a)}–${nk(o.b)}`)).join('')}</div>`;
   } else if (tab === 'pair') body = `<div class="opts one">${PAIRS.map(([a, b]) => `<div class="pair">${opt({ type:'pair', a, b }, nk(a))}<span class="vs">VS</span>${opt({ type:'pair', a:b, b:a }, nk(b))}</div>`).join('')}</div>`;
+  else if (TT) body = `<div class="hint" style="margin-top:8px">${PROP.text}</div><div class="opts one"><div class="pair">${opt({ type:'hissi', a:1 }, 'KYSYY')}<span class="vs">VS</span>${opt({ type:'hissi', a:0 }, 'EI KYSY')}</div></div>
+    <div class="hint" style="margin-top:8px">Godzillan loppuaika</div><div class="opts one"><div class="pair">${opt({ type:'u60', a:1 }, 'ALLE 60:00')}<span class="vs">VS</span>${opt({ type:'u60', a:0 }, 'YLI 60:00')}</div></div>`;
   else body = `<div class="opts one">${opt({ type:'hissi' }, PROP.text)}${opt({ type:'u60' }, 'Godzilla alittaa tunnin (60:00)')}</div>`;
-  const k = sel ? oddsFor(sel, P) : null, can = sel && k != null && isOpen(sel, live) && stake <= kassa;
+  const B = bal(), k = sel ? (TT ? totoEst(sel, stake) : oddsFor(sel, P)) : null, can = sel && k != null && isOpen(sel, live) && stake <= B && (!TT || myName());
+  const pot = TT ? totoPool().reduce((a, b) => a + b.stake, 0) : 0;
   el.innerHTML = `<div class="mk">
     <div class="tabs">${tabs.map(([t, l]) => `<button type="button" data-t="${t}" aria-pressed="${tab === t}">${l}</button>`).join('')}</div>
     ${body}
-    <div class="mkfoot">${STAKES.map(v => `<button class="chip" type="button" data-v="${v}" aria-pressed="${stake === v}" ${v > kassa ? 'disabled' : ''}>${v} MK</button>`).join('')}</div>
-    <button class="place" type="button" ${can ? '' : 'disabled'}>${sel ? (k != null ? `LYÖ ${stake} MK @ ${odd(k)}` : 'KOHDE SULJETTU') : 'VALITSE KOHDE'}</button>
-    <div class="kassa"><span class="lbl">KASSA · PELIMARKAT</span><span class="amt">${kassa} MK</span></div>
-    <div class="mkmsg">${sel && stake > kassa ? `Kassassa ${kassa} mk.` : ''}</div>
+    <div class="mkfoot">${STAKES.map(v => `<button class="chip" type="button" data-v="${v}" aria-pressed="${stake === v}" ${v > B ? 'disabled' : ''}>${v} MK</button>`).join('')}</div>
+    <button class="place" type="button" ${can ? '' : 'disabled'}>${sel ? (k != null ? (TT ? `LYÖ ${stake} MK · ARVIO ${odd(k)}` : `LYÖ ${stake} MK @ ${odd(k)}`) : 'KOHDE SULJETTU') : 'VALITSE KOHDE'}</button>
+    <div class="kassa"><span class="lbl">${TT ? `SALDO · POTIT ${pot} MK` : 'KASSA · PELIMARKAT'}</span><span class="amt">${B} MK</span></div>
+    <div class="mkmsg" id="${live ? 'mm-live' : 'mm-pre'}">${sel && stake > B ? `Saldoa ${B} mk.` : TT && sel && !myName() ? 'Kirjoita nimesi ylös ennen vetoa.' : TT ? 'Kertoimet ovat arvioita. Lopullinen osinko lasketaan lähtölaukauksen hetken potista.' : ''}</div>
   </div>`;
   el.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; sel = null; renderMarket(el, live); if (!live) renderList(); });
   el.querySelectorAll('.opt').forEach(b => b.onclick = () => { const o = JSON.parse(b.dataset.o); sel = sel && sel.type === o.type && sel.a === o.a && sel.b === o.b ? null : o; renderMarket(el, live); if (!live) renderList(); });
@@ -729,6 +924,15 @@ function renderMarket(el, live){
   el.querySelector('.place').onclick = () => placeBet(live);
 }
 function placeBet(live){
+  if (isToto()) {
+    if (!sel || stake > bal() || now2() >= room.startTs - 300 || !myName()) return;
+    const b = { type: sel.type, stake, t: Date.now() }; if (sel.a != null) b.a = sel.a; if (sel.b != null) b.b = sel.b;
+    const code = room.code;
+    FB.api.set(`s/${ILTA}/players/${FB.uid}`, { name: myName() }).catch(() => {});
+    FB.api.push(`s/${ILTA}/bets/${code}/${FB.uid}`, b).catch(() => { const m = $('mm-pre'); if (m) m.textContent = 'Veto ei mennyt läpi. Lähtö ehti ehkä alkaa.'; });
+    sel = null; tone(1568, .06, 0, .05);
+    return;
+  }
   const P = currentP(), k = oddsFor(sel, P);
   if (!sel || k == null || stake > kassa || !isOpen(sel, live)) return;
   kassa -= stake; store.set('vw-ski-kassa', kassa);
@@ -741,23 +945,27 @@ function renderSlip(el, removable){
   if (!bets.length) { el.innerHTML = ''; return; }
   const tot = bets.reduce((a, b) => a + b.stake, 0);
   el.innerHTML = `<div class="h"><span>KUPONKI</span><span>PANOKSET ${tot} MK</span></div>` + bets.map((b, i) => `
-    <div class="bet"><span>${betLabel(b)}${b.live ? `<span class="live">LIVE ${fmt(b.t)}</span>` : ''}</span><span class="k">${b.stake} MK @ ${odd(b.odds)}</span>
+    <div class="bet"><span>${betLabel(b)}${b.live ? `<span class="live">LIVE ${fmt(b.t)}</span>` : ''}</span><span class="k">${b.stake} MK${b.odds ? ` @ ${odd(b.odds)}` : ' · TOTO'}</span>
     ${removable ? `<button class="x" type="button" data-i="${i}" aria-label="Poista veto">×</button>` : '<span></span>'}</div>`).join('');
-  el.querySelectorAll('.x').forEach(b => b.onclick = () => { const v = bets.splice(+b.dataset.i, 1)[0]; kassa += v.stake; store.set('vw-ski-kassa', kassa); renderStart(); });
+  el.querySelectorAll('.x').forEach(b => b.onclick = () => {
+    if (isToto()) { const v = bets[+b.dataset.i]; if (v && now2() < room.startTs - 300) FB.api.remove(`s/${ILTA}/bets/${room.code}/${FB.uid}/${v.id}`).catch(() => {}); return; }
+    const v = bets.splice(+b.dataset.i, 1)[0]; kassa += v.stake; store.set('vw-ski-kassa', kassa); renderStart();
+  });
 }
-function refundPre(){ bets.forEach(b => kassa += b.stake); bets = []; store.set('vw-ski-kassa', kassa); }
+function refundPre(){ if (isToto()) { bets = []; return; } bets.forEach(b => kassa += b.stake); bets = []; store.set('vw-ski-kassa', kassa); }
 
 // ---------- lähtönäkymä ----------
 function renderStart(){
   $('mode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === mode)));
   $('room').hidden = mode !== 'poru';
-  $('room-new').hidden = !!room; $('room-in').hidden = !room;
-  $('nimi').value = store.get('vw-ski-name', '');
+  $('room-new').hidden = !!room || TOTO; $('room-in').hidden = !room || TOTO; $('toto').hidden = !TOTO;
+  if (document.activeElement !== $('nimi')) $('nimi').value = store.get('vw-ski-name', '');
+  if (TOTO && mode === 'poru') renderTotoPanel();
   if (room) $('rcode').textContent = room.code;
-  const showRace = mode === 'solo' || room;
+  const showRace = mode === 'solo' || (room && (!TOTO || FB.ok));
   ['wx', 'wxline', 'startlist', 'mk-pre', 'slip-pre', 'go'].forEach(id => $(id).hidden = !showRace);
   document.querySelectorAll('#v-start .slab').forEach(s => s.hidden = !showRace);
-  if (!showRace) { $('stats').innerHTML = ''; $('refill').hidden = kassa >= STAKES[0]; return; }
+  if (!showRace) { $('stats').innerHTML = ''; $('refill').hidden = kassa >= STAKES[0] || (TOTO && mode === 'poru'); return; }
   const top = race.forecast.indexOf(Math.max(...race.forecast));
   $('wx').innerHTML = KELIT.map((K, i) => `<div><b>${race.forecast[i]} %</b><i>${K.name}</i><small>${K.temp}</small><span class="bar" style="width:${race.forecast[i]}%"></span></div>`).join('');
   $('wxline').textContent = `Todennäköisin ${KELIT[top].name.toLowerCase()}: ${KELIT[top].line} Keli arvotaan ennusteesta lähtölaukauksella, ja sää voi kääntyä 5 km:n kohdalla.`;
@@ -771,7 +979,7 @@ function renderStart(){
 function renderList(){
   const P = mk(-1);
   $('startlist').innerHTML = SKIERS.map((s, i) => {
-    const k = toOdds(P.win[i]), on = sel && sel.type === 'win' && sel.a === i;
+    const TT = isToto(), k = TT ? totoEst({ type:'win', a:i }, stake) : toOdds(P.win[i]), on = sel && sel.type === 'win' && sel.a === i;
     const fav = P.win[i] === Math.max(...P.win);
     const wk = KELIT[race.sk[i].wax];
     return `<button class="runner" type="button" data-i="${i}" aria-pressed="${on}">
@@ -780,7 +988,7 @@ function renderList(){
       <span class="mini"><img src="img/${s.id}-hiihto.jpg" alt=""></span>
       <span class="who"><div class="nick">${s.nick}</div><div class="nm">${s.name}</div><div class="q">${s.quip}</div>
         <div class="wax">VOITELU: <em>${wk.name}</em> · AVAUS ${odd(s.odds)}</div></span>
-      <span class="odds ${fav ? 'red' : ''}"><i>TÄNÄÄN</i><b>${odd(k)}</b></span>
+      <span class="odds ${fav ? 'red' : ''}"><i>${TT ? 'TOTO' : 'TÄNÄÄN'}</i><b>${odd(k)}</b></span>
     </button>`;
   }).join('');
   $('startlist').querySelectorAll('.runner').forEach(b => b.onclick = () => {
@@ -793,18 +1001,19 @@ let goKey = '';
 function renderGo(){
   const tot = bets.reduce((a, b) => a + b.stake, 0);
   if (mode === 'poru' && room) {
-    const left = Math.max(0, Math.ceil((room.startTs - Date.now()) / 1000));
-    const key = left + '|' + tot + '|' + kassa;
+    const left = Math.max(0, Math.ceil((room.startTs - now2()) / 1000));
+    const key = left + '|' + tot + '|' + bal() + '|' + bets.length;
     if (key === goKey) return; goKey = key;
     $('go').disabled = true;
     $('go').innerHTML = `LÄHTÖ ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}<small>${tot ? `KUPONGISSA ${tot} MK` : 'LYÖ VETOSI ENNEN LÄHTÖÄ'}</small>`;
-    $('rtime').innerHTML = `LÄHTÖ KLO ${hhmm(new Date(room.startTs))}<em>${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</em>`;
+    $(room.toto ? 'ttime' : 'rtime').innerHTML = `${room.toto ? 'TOTO SULKEUTUU' : `LÄHTÖ KLO ${hhmm(new Date(room.startTs))}`}<em>${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</em>`;
+    if (room.toto) $('go').innerHTML = `LÄHTÖ ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}<small>${tot ? `TOTOSSA ${tot} MK` : 'LYÖ VETOSI ENNEN LÄHTÖÄ'}</small>`;
   } else {
     goKey = '';
     $('go').disabled = false;
     $('go').innerHTML = `LÄHTÖLAUKAUS<small>${tot ? `KUPONGISSA ${bets.length} ${bets.length === 1 ? 'VETO' : 'VETOA'} · ${tot} MK` : 'ILMAN VETOA'}</small>`;
   }
-  $('refill').hidden = kassa >= STAKES[0] || bets.length > 0;
+  $('refill').hidden = kassa >= STAKES[0] || bets.length > 0 || (TOTO && mode === 'poru');
 }
 $('refill').onclick = () => { kassa = 100; store.set('vw-ski-kassa', kassa); renderStart(); };
 $('go').onclick = () => { if (mode === 'solo') { ac(); soloStart = performance.now() / 1000 + 1.9; startBeeps(1.9); beginRace(); } };
@@ -817,6 +1026,7 @@ function beginRace(){
   phase = 'race'; sel = null; tab = 'win'; speed = 1; settled = false;
   $('feed').innerHTML = ''; $('mk-live').hidden = true; $('livebtn').setAttribute('aria-expanded', 'false');
   $('speed').hidden = mode !== 'solo';
+  $('livebtn').hidden = isToto(); $('totonote').hidden = !isToto(); $('livebtn').textContent = 'LYÖ LIVEVETO';
   setSpeedBtns(); show('race'); setCtx('LIVE', true); sizeCanvases();
   try { navigator.wakeLock && navigator.wakeLock.request('screen').then(l => wakeLock = l, () => {}); } catch (e) {}
   const K = KELIT[race.keli];
@@ -848,7 +1058,7 @@ function simFromEl(el){
   const W = race.ft[race.order[0]], e1 = W / SCALE;
   return el <= e1 ? el * SCALE : W + (el - e1) * SCALE * 3;
 }
-function endEl(){ const W = race.ft[race.order[0]], L = race.ft[race.order[race.order.length - 1]]; return W / SCALE + (L - W) / (SCALE * 3); }
+function endEl(R = race){ const W = R.ft[R.order[0]], L = R.ft[R.order[R.order.length - 1]]; return W / SCALE + (L - W) / (SCALE * 3); }
 let soloBase = { at: 0, el: 0 };
 function soloElapsed(now){ return soloBase.el + (now - soloBase.at) * speed; }
 function soloJumpEnd(){ soloBase = { at: performance.now() / 1000, el: endEl() + 1 }; speed = 1; }
@@ -856,7 +1066,7 @@ function soloJumpEnd(){ soloBase = { at: performance.now() / 1000, el: endEl() +
 function frame(){
   const now = performance.now() / 1000;
   if (phase === 'lobby' && mode === 'poru' && room) {
-    const left = (room.startTs - Date.now()) / 1000;
+    const left = (room.startTs - now2()) / 1000;
     renderGo();
     if (left <= 2 && left > 0 && !beeped) { beeped = true; startBeeps(left); }
     if (left <= 0) {
@@ -866,7 +1076,7 @@ function frame(){
   }
   if (phase === 'race') {
     let el;
-    if (mode === 'poru' && room) el = (Date.now() - room.startTs) / 1000;
+    if (mode === 'poru' && room) el = (now2() - room.startTs) / 1000;
     else { if (soloStart && now < soloStart) el = 0; else { if (soloStart) { soloBase = { at: soloStart, el: 0 }; soloStart = null; } el = soloElapsed(now); } }
     const pre = (mode === 'solo' && soloStart) ? soloStart - now : 0;
     const t = Math.min(race.T, simFromEl(Math.max(0, el)));
@@ -949,9 +1159,10 @@ function renderBoard(){
     const mine = bets.some(b => (b.type === 'win' || b.type === 'top2') && b.a === i);
     return `<div class="brow"><span class="p">${p + 1}</span><span class="mi"><img src="img/${SKIERS[i].id}-${stc === 4 && stop ? 'kaatui' : 'hiihto'}.jpg" alt=""></span>
       <span class="n ${mine ? 'mine' : ''}">${nk(i)}</span><span class="st ${stop ? 'alert' : ''}">${st}</span><span class="g">${g}</span>
-      <button class="lo ${cls}" type="button" data-i="${i}" ${open && k ? '' : 'disabled'}>${open && k ? odd(k) : '–'}</button></div>`;
+      <button class="lo ${cls}" type="button" data-i="${i}" ${open && k && !isToto() ? '' : 'disabled'}>${open && k ? odd(k) : '–'}</button></div>`;
   }).join('');
   $('board').querySelectorAll('.lo').forEach(b => b.onclick = () => {
+    if (isToto()) return;
     tab = 'win'; sel = { type:'win', a:+b.dataset.i };
     $('mk-live').hidden = false; $('livebtn').setAttribute('aria-expanded', 'true'); $('livebtn').textContent = 'PIILOTA LIVEVEDOT';
     renderMarket($('mk-live'), true);
@@ -1071,10 +1282,11 @@ const VIEWS = {
   staga: 'Avauskerroin 13.00 osui. Kirjanpito on pyytänyt selvitystä.',
   godzilla: 'Avauskerroin 51.00 osui. Vedonvälittäjä on poistunut paikalta.',
 };
-function settle(b){
+function settle(b){ return settleR(race, b); }
+function settleR(race, b){
   const o = race.order, ab = i => race.sk[i].absent;
-  if (b.type === 'hissi') return race.hissiDone ? 'win' : 'lose';
-  if (b.type === 'u60') return ab(0) ? 'void' : race.ft[0] < 3600 ? 'win' : 'lose';
+  if (b.type === 'hissi') return (race.hissiDone ? 1 : 0) === (b.a == null ? 1 : b.a) ? 'win' : 'lose';
+  if (b.type === 'u60') return ab(0) ? 'void' : (race.ft[0] < 3600 ? 1 : 0) === (b.a == null ? 1 : b.a) ? 'win' : 'lose';
   if ((b.a != null && ab(b.a)) || (b.b != null && ab(b.b))) return 'void';
   if (b.type === 'win') return o[0] === b.a ? 'win' : 'lose';
   if (b.type === 'top2') return o[0] === b.a || o[1] === b.a ? 'win' : 'lose';
@@ -1098,6 +1310,8 @@ function finishRace(late){
   race.sk.filter(k => k.absent).forEach(k => rows.push(`<tr><td class="p">–</td><td class="n">${k.s.nick}</td><td class="w"></td><td class="t">EI LÄHTÖÄ</td><td class="gp"></td></tr>`));
   $('res').innerHTML = rows.join('');
   $('reskeli').textContent = `Keli: ${KELIT[race.keli].name.toLowerCase()} ${KELIT[race.keli].temp}${race.turnT != null ? `, 5 km:n jälkeen ${KELIT[race.turn].name.toLowerCase()} ${KELIT[race.turn].temp}` : ''}. Ennuste antoi lähdön kelille ${race.forecast[race.keli]} %.`;
+  $('series-res').innerHTML = '';
+  if (isToto()) { totoTill(late); race.net = 0; $('share').hidden = false; setTimeout(() => show('res'), late ? 0 : 900); return; }
   const L = []; let back = 0, staked = 0;
   bets.forEach(b => {
     const r = settle(b); staked += b.stake;
@@ -1117,21 +1331,25 @@ function finishRace(late){
   setTimeout(() => show('res'), late ? 0 : 900);
 }
 $('share').onclick = () => {
+  if (isToto()) { copy(seriesText(), $('sharemsg')); return; }
   const name = store.get('vw-ski-name', '') || 'Nimetön';
   const n = race.net >= 0 ? `+${race.net}` : `−${-race.net}`;
   copy(`Vierumäki Hiihto ${room ? room.code : ''}: ${nk(race.order[0])} voitti ${fmt(race.ft[race.order[0]])}. ${name}: ${n} mk, kassa ${kassa} mk.`, $('sharemsg'));
 };
 $('again').onclick = () => {
   phase = 'lobby'; setCtx('LAUANTAI', false);
+  if (isToto()) { room = null; bets = []; newSolo(); totoSync(); show('start'); return; }
   if (mode === 'poru') { room = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
   newSolo(); renderStart(); show('start');
 };
 
 // ---------- käynnistys ----------
 renderSound();
-const hm = /^#l(\d{5})$/.exec(location.hash);
+const hm = !TOTO && /^#l(\d{5})$/.exec(location.hash);
 const hr = hm && roomFromCode(hm[1]);
-if (hr && Date.now() < hr.startTs + 6 * 60000) enterRoom(hr); else { newSolo(); renderStart(); }
+if (hr && Date.now() < hr.startTs + 6 * 60000) enterRoom(hr);
+else if (TOTO && /^#(toto|l\d{5})$/.test(location.hash)) { newSolo(); mode = 'poru'; fbInit(); renderStart(); }
+else { newSolo(); renderStart(); }
 requestAnimationFrame(frame);
 </script>
 
