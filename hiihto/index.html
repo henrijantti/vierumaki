@@ -113,7 +113,7 @@ h1 .red { color: var(--red); }
 .runner[aria-pressed="true"] { border: 2.5px solid var(--red); padding: 5px 5px 5px 7px; background: var(--red-wash); }
 .bib { font-family: var(--f-slab); font-size: 20px; text-align: center; font-variant-numeric: tabular-nums; }
 .mini { width: 58px; height: 58px; border: 2px solid var(--ink); box-sizing: border-box; overflow: hidden; background: var(--ink); }
-.mini img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.7); transform-origin: 47% 22%; }
+.mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .who { min-width: 0; }
 .who .nick { font-family: var(--f-display); font-size: 22px; line-height: 24px; letter-spacing: .5px; text-transform: uppercase; }
 .who .nm { font-weight: 600; font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
@@ -185,7 +185,7 @@ canvas { display: block; width: 100%; }
 .brow:nth-child(2) { border-top: 2px solid var(--ink); }
 .brow .p { font-family: var(--f-slab); font-size: 16px; text-align: center; }
 .brow .mi { width: 30px; height: 30px; border: 1.5px solid var(--ink); box-sizing: border-box; overflow: hidden; }
-.brow .mi img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.7); transform-origin: 47% 22%; }
+.brow .mi img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .brow .n { font-family: var(--f-display); font-size: 17px; letter-spacing: .5px; text-transform: uppercase; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brow .n.mine { color: var(--red); }
 .brow .st { font-weight: 600; font-size: 8.5px; letter-spacing: 1.2px; color: var(--muted); }
@@ -582,7 +582,7 @@ let tab = 'win';
 let simT = 0, speed = 1, soloStart = null, evIdx = 0, camX = 0, lastBoard = 0, settled = false, beeped = false;
 const mkCache = {};
 const imgs = {};
-SKIERS.forEach(s => ['hiihto', 'kaatui'].forEach(v => { const im = new Image(); im.src = `img/${s.id}-${v}.jpg`; imgs[s.id + v] = im; }));
+SKIERS.forEach(s => ['kasvo'].forEach(v => { const im = new Image(); im.src = `img/${s.id}-${v}.jpg`; imgs[s.id + v] = im; }));
 
 // ---------- ääni ----------
 let soundOn = store.get('vw-ski-sound', true), AC = null;
@@ -985,7 +985,7 @@ function renderList(){
     return `<button class="runner" type="button" data-i="${i}" aria-pressed="${on}">
       ${bets.some(b => b.type === 'win' && b.a === i) ? `<span class="vtag">VETO</span>` : ''}
       <span class="bib">${s.bib}</span>
-      <span class="mini"><img src="img/${s.id}-hiihto.jpg" alt=""></span>
+      <span class="mini"><img src="img/${s.id}-kasvo.jpg" alt=""></span>
       <span class="who"><div class="nick">${s.nick}</div><div class="nm">${s.name}</div><div class="q">${s.quip}</div>
         <div class="wax">VOITELU: <em>${wk.name}</em> · AVAUS ${odd(s.odds)}</div></span>
       <span class="odds ${fav ? 'red' : ''}"><i>${TT ? 'TOTO' : 'TÄNÄÄN'}</i><b>${odd(k)}</b></span>
@@ -1157,7 +1157,7 @@ function renderBoard(){
     const k = toOdds(P.win[i]), k0 = prev ? toOdds(prev.win[i]) : null;
     const cls = k0 && k && k < k0 ? 'dn' : '';
     const mine = bets.some(b => (b.type === 'win' || b.type === 'top2') && b.a === i);
-    return `<div class="brow"><span class="p">${p + 1}</span><span class="mi"><img src="img/${SKIERS[i].id}-${stc === 4 && stop ? 'kaatui' : 'hiihto'}.jpg" alt=""></span>
+    return `<div class="brow"><span class="p">${p + 1}</span><span class="mi"><img src="img/${SKIERS[i].id}-kasvo.jpg" alt=""></span>
       <span class="n ${mine ? 'mine' : ''}">${nk(i)}</span><span class="st ${stop ? 'alert' : ''}">${st}</span><span class="g">${g}</span>
       <button class="lo ${cls}" type="button" data-i="${i}" ${open && k && !isToto() ? '' : 'disabled'}>${open && k ? odd(k) : '–'}</button></div>`;
   }).join('');
@@ -1258,8 +1258,8 @@ function drawZoom(pre){
     x.beginPath(); x.moveTo(px - R - 6 - sw, cy + R - 1); x.lineTo(px + R + 8 - sw, cy + R - 1); x.stroke();
     x.lineWidth = 1.5; x.beginPath(); x.moveTo(px + 2, cy); x.lineTo(px - R - 4 + sw * 1.5, cy + R + 3); x.stroke();
     x.save(); x.beginPath(); x.arc(px, cy, R, 0, 7); x.closePath(); x.clip();
-    const fell = stop && stc === 4, im = imgs[k.s.id + (fell ? 'kaatui' : 'hiihto')];
-    if (im.complete && im.naturalWidth) { const f = im.naturalWidth / 720, c = fell ? [360, 190] : [340, 165], h = 160 * f; x.drawImage(im, c[0] * f - h, c[1] * f - h, h * 2, h * 2, px - R, cy - R, R * 2, R * 2); } else { x.fillStyle = INK; x.fill(); }
+    const im = imgs[k.s.id + 'kasvo'];
+    if (im.complete && im.naturalWidth) x.drawImage(im, px - R, cy - R, R * 2, R * 2); else { x.fillStyle = INK; x.fill(); }
     x.restore();
     const isLead = i === o[0];
     x.beginPath(); x.arc(px, cy, R, 0, 7); x.lineWidth = isLead ? 3 : 2; x.strokeStyle = stop || isLead ? RED : INK; x.stroke();
